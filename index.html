@@ -1,26 +1,77 @@
-            // Update time
-            time += 0.05;
-            cube.material.uniforms.time.value = 0.5 * time;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robert Rothe - PS2 Vibe</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
-            // Rotate and scale the cube
-            cube.rotation.x += 0.1;
-            cube.rotation.y += 0.1;
-            cube.scale.x = 1.5 + Math.sin(time * 0.7);
-            cube.scale.y = 1.5 + Math.cos(time * 0.5);
-            cube.scale.z = 1.5 + Math.sin(time * 0.3);
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: black;
+            font-family: 'Press Start 2P', cursive;
+        }
 
-            // Change point light color over time
-            pointLight.color.setHSL(Math.sin(time * 0.2), 1, 0.5);
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+        }
 
-            // Change background color over time
-            scene.background = new THREE.Color(`hsl(${Math.floor((time * 10) % 360)}, 100%, 50%)`);
+        h1 {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #00ff00;
+            font-size: 2rem;
+            text-shadow: 2px 2px 0 #0000ff, -2px -2px 0 #ff0000;
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+    <h1>Robert Rothe</h1>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Initialize scene, camera, and renderer
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-            // Render the scene
+        // Create geometry and material for retro effect
+        const geometry = new THREE.BoxGeometry();
+        const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
+        const cube = new THREE.Mesh(geometry, material);
+        scene.add(cube);
+
+        camera.position.z = 5;
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Rotate the cube for a dynamic effect
+            cube.rotation.x += 0.01;
+            cube.rotation.y += 0.01;
+
             renderer.render(scene, camera);
         }
 
-        // Initialize
-        init();
+        animate();
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
     </script>
 </body>
 </html>
