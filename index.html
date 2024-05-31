@@ -46,7 +46,7 @@
 <body>
     <div id="canvas-container"></div>
     <h1>Robert Rothe</h1>
-    <h2>Welcome</h2>
+    <h2>Welcome to My World</h2>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
         // Initialize scene, camera, and renderer
@@ -56,31 +56,47 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-        // Create geometries and materials for retro effect
-        const geometry1 = new THREE.BoxGeometry();
-        const material1 = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
-        const cube1 = new THREE.Mesh(geometry1, material1);
-        cube1.position.set(-2, 0, 0);
-        scene.add(cube1);
-
-        const geometry2 = new THREE.TorusGeometry(1, 0.4, 16, 100);
-        const material2 = new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true });
-        const torus = new THREE.Mesh(geometry2, material2);
-        torus.position.set(2, 0, 0);
-        scene.add(torus);
+        // Create initial geometry and material
+        let geometry = new THREE.BoxGeometry();
+        const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
+        let mesh = new THREE.Mesh(geometry, material);
+        scene.add(mesh);
 
         camera.position.z = 5;
+
+        // Morph targets
+        const geometries = [
+            new THREE.BoxGeometry(),
+            new THREE.SphereGeometry(1, 16, 16),
+            new THREE.TorusGeometry(1, 0.4, 16, 100),
+            new THREE.ConeGeometry(1, 2, 16),
+            new THREE.CylinderGeometry(1, 1, 2, 16)
+        ];
+
+        let morphIndex = 0;
+        let morphProgress = 0;
 
         // Animation loop
         function animate() {
             requestAnimationFrame(animate);
 
-            // Rotate the geometries for dynamic effect
-            cube1.rotation.x += 0.01;
-            cube1.rotation.y += 0.01;
+            // Rotate the mesh for dynamic effect
+            mesh.rotation.x += 0.01;
+            mesh.rotation.y += 0.01;
 
-            torus.rotation.x += 0.02;
-            torus.rotation.y += 0.02;
+            // Morphing logic
+            morphProgress += 0.01;
+            if (morphProgress >= 1) {
+                morphProgress = 0;
+                morphIndex = (morphIndex + 1) % geometries.length;
+                scene.remove(mesh);
+                geometry = geometries[morphIndex];
+                mesh = new THREE.Mesh(geometry, material);
+                scene.add(mesh);
+            }
+
+            // Change color dynamically
+            material.color.setHex(Math.random() * 0xffffff);
 
             renderer.render(scene, camera);
         }
@@ -93,11 +109,6 @@
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
-
-        // Dynamic background color change
-        setInterval(() => {
-            document.body.style.backgroundColor = `#${Math.floor(Math.random()*16777215).toString(16)}`;
-        }, 1000);
     </script>
 </body>
 </html>
