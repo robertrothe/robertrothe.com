@@ -1,7 +1,26 @@
-<!DOCTYPE html>
-<html>
-<body>
-<h1>Hello World</h1>
-<p>ROBERTROTHE.COM</p>
+            // Update time
+            time += 0.05;
+            cube.material.uniforms.time.value = 0.5 * time;
+
+            // Rotate and scale the cube
+            cube.rotation.x += 0.1;
+            cube.rotation.y += 0.1;
+            cube.scale.x = 1.5 + Math.sin(time * 0.7);
+            cube.scale.y = 1.5 + Math.cos(time * 0.5);
+            cube.scale.z = 1.5 + Math.sin(time * 0.3);
+
+            // Change point light color over time
+            pointLight.color.setHSL(Math.sin(time * 0.2), 1, 0.5);
+
+            // Change background color over time
+            scene.background = new THREE.Color(`hsl(${Math.floor((time * 10) % 360)}, 100%, 50%)`);
+
+            // Render the scene
+            renderer.render(scene, camera);
+        }
+
+        // Initialize
+        init();
+    </script>
 </body>
 </html>
