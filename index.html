@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Robert Rothe</title>
+    <title>Robert Rothe - PS2 Vibe</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
@@ -24,18 +24,29 @@
 
         h1 {
             position: absolute;
-            top: 50%;
+            top: 10%;
             left: 50%;
             transform: translate(-50%, -50%);
             color: #00ff00;
             font-size: 2rem;
             text-shadow: 2px 2px 0 #0000ff, -2px -2px 0 #ff0000;
         }
+
+        h2 {
+            position: absolute;
+            bottom: 10%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ff0000;
+            font-size: 1.5rem;
+            text-shadow: 2px 2px 0 #00ff00, -2px -2px 0 #0000ff;
+        }
     </style>
 </head>
 <body>
     <div id="canvas-container"></div>
     <h1>Robert Rothe</h1>
+    <h2>Welcome to My World</h2>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
         // Initialize scene, camera, and renderer
@@ -45,11 +56,18 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-        // Create geometry and material for retro effect
-        const geometry = new THREE.BoxGeometry();
-        const material = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true });
-        const cube = new THREE.Mesh(geometry, material);
-        scene.add(cube);
+        // Create geometries and materials for retro effect
+        const geometry1 = new THREE.BoxGeometry();
+        const material1 = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
+        const cube1 = new THREE.Mesh(geometry1, material1);
+        cube1.position.set(-2, 0, 0);
+        scene.add(cube1);
+
+        const geometry2 = new THREE.TorusGeometry(1, 0.4, 16, 100);
+        const material2 = new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true });
+        const torus = new THREE.Mesh(geometry2, material2);
+        torus.position.set(2, 0, 0);
+        scene.add(torus);
 
         camera.position.z = 5;
 
@@ -57,9 +75,12 @@
         function animate() {
             requestAnimationFrame(animate);
 
-            // Rotate the cube for a dynamic effect
-            cube.rotation.x += 0.01;
-            cube.rotation.y += 0.01;
+            // Rotate the geometries for dynamic effect
+            cube1.rotation.x += 0.01;
+            cube1.rotation.y += 0.01;
+
+            torus.rotation.x += 0.02;
+            torus.rotation.y += 0.02;
 
             renderer.render(scene, camera);
         }
@@ -72,6 +93,11 @@
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
+
+        // Dynamic background color change
+        setInterval(() => {
+            document.body.style.backgroundColor = `#${Math.floor(Math.random()*16777215).toString(16)}`;
+        }, 1000);
     </script>
 </body>
 </html>
