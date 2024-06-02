@@ -3,94 +3,121 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>robertrothe</title>
+    <title>PS2 Bootup Animation - Robert Rothe</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: black; }
         canvas { display: block; }
-        .branding {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            font-family: 'Arial', sans-serif;
-            font-size: 2em;
-            text-align: center;
-            opacity: 0;
-            transition: opacity 2s ease-in-out;
-        }
     </style>
 </head>
 <body>
-    <div class="branding">Robert Rothe</div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://threejs.org/examples/jsm/loaders/FontLoader.js"></script>
+    <script src="https://threejs.org/examples/jsm/geometries/TextGeometry.js"></script>
     <script>
-        // Initialize scene, camera, and renderer
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer();
-        
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
-
-        // Particle system parameters
+        let scene, camera, renderer, particleSystem, textMesh;
+        let particles = [];
         const particleCount = 2000;
-        const particles = new THREE.BufferGeometry();
-        const positions = new Float32Array(particleCount * 3);
-        const velocities = new Float32Array(particleCount * 3);
+        const duration = 5000; // animation duration in milliseconds
+        const startTime = Date.now();
 
-        // Initialize particle positions and velocities
-        for (let i = 0; i < particleCount; i++) {
-            positions[i * 3] = (Math.random() - 0.5) * 50;
-            positions[i * 3 + 1] = (Math.random() - 0.5) * 50;
-            positions[i * 3 + 2] = (Math.random() - 0.5) * 50;
-            velocities[i * 3] = (Math.random() - 0.5) * 0.02;
-            velocities[i * 3 + 1] = (Math.random() - 0.5) * 0.02;
-            velocities[i * 3 + 2] = (Math.random() - 0.5) * 0.02;
+        init();
+        animate();
+
+        function init() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            // Load font and create text
+            const loader = new THREE.FontLoader();
+            loader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', function (font) {
+                const textGeometry = new THREE.TextGeometry('Robert Rothe', {
+                    font: font,
+                    size: 1,
+                    height: 0.2,
+                    curveSegments: 12,
+                    bevelEnabled: true,
+                    bevelThickness: 0.05,
+                    bevelSize: 0.05,
+                    bevelSegments: 5
+                });
+
+                const textMaterial = new THREE.MeshPhongMaterial({ color: 0x00ff00 });
+                textMesh = new THREE.Mesh(textGeometry, textMaterial);
+                textMesh.position.set(-3.5, 0, 0); // Center the text
+                scene.add(textMesh);
+            });
+
+            // Create particles
+            const particleGeometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(particleCount * 3);
+            for (let i = 0; i < particleCount; i++) {
+                positions[i * 3] = (Math.random() - 0.5) * 50;
+                positions[i * 3 + 1] = (Math.random() - 0.5) * 50;
+                positions[i * 3 + 2] = (Math.random() - 0.5) * 50;
+                particles.push({
+                    x: positions[i * 3],
+                    y: positions[i * 3 + 1],
+                    z: positions[i * 3 + 2]
+                });
+            }
+            particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+            const particleMaterial = new THREE.PointsMaterial({
+                color: 0xffffff,
+                size: 0.1,
+            });
+
+            particleSystem = new THREE.Points(particleGeometry, particleMaterial);
+            scene.add(particleSystem);
+
+            // Add lighting
+            const ambientLight = new THREE.AmbientLight(0x404040); // soft white light
+            scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            scene.add(directionalLight);
+
+            camera.position.z = 10;
+
+            window.addEventListener('resize', onWindowResize, false);
         }
 
-        particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        particles.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3));
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
 
-        // Create material for particles
-        const particleMaterial = new THREE.PointsMaterial({
-            color: 0xffffff,
-            size: 0.1,
-        });
-
-        const particleSystem = new THREE.Points(particles, particleMaterial);
-        scene.add(particleSystem);
-
-        camera.position.z = 10;
-
-        // Animation function
         function animate() {
             requestAnimationFrame(animate);
+            const elapsedTime = Date.now() - startTime;
 
-            // Update particle positions for animation
-            for (let i = 0; i < particleCount; i++) {
-                positions[i * 3] += velocities[i * 3];
-                positions[i * 3 + 1] += velocities[i * 3 + 1];
-                positions[i * 3 + 2] += velocities[i * 3 + 2];
-
-                // Example animation: particles move towards the center
-                velocities[i * 3] += (0 - positions[i * 3]) * 0.0001;
-                velocities[i * 3 + 1] += (0 - positions[i * 3 + 1]) * 0.0001;
-                velocities[i * 3 + 2] += (0 - positions[i * 3 + 2]) * 0.0001;
+            if (elapsedTime < duration) {
+                // Animate particles moving towards the center
+                const positions = particleSystem.geometry.attributes.position.array;
+                for (let i = 0; i < particleCount; i++) {
+                    positions[i * 3] += (0 - positions[i * 3]) * 0.01;
+                    positions[i * 3 + 1] += (0 - positions[i * 3 + 1]) * 0.01;
+                    positions[i * 3 + 2] += (0 - positions[i * 3 + 2]) * 0.01;
+                }
+                particleSystem.geometry.attributes.position.needsUpdate = true;
+            } else {
+                // After particles converge, make them spin around the text
+                const positions = particleSystem.geometry.attributes.position.array;
+                for (let i = 0; i < particleCount; i++) {
+                    const p = particles[i];
+                    const angle = 0.01 * (i % 360); // Adjust the spinning speed and direction
+                    positions[i * 3] = p.x * Math.cos(angle) - p.z * Math.sin(angle);
+                    positions[i * 3 + 1] = p.y;
+                    positions[i * 3 + 2] = p.x * Math.sin(angle) + p.z * Math.cos(angle);
+                }
+                particleSystem.geometry.attributes.position.needsUpdate = true;
             }
-
-            particles.attributes.position.needsUpdate = true;
 
             renderer.render(scene, camera);
         }
-
-        // Start the animation
-        animate();
-
-        // Show branding after a delay
-        setTimeout(() => {
-            document.querySelector('.branding').style.opacity = 1;
-        }, 4000); // Adjust the delay to match the animation timing
     </script>
 </body>
 </html>
