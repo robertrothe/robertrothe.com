@@ -12,11 +12,8 @@
 <body>
     <div id="container"></div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://threejs.org/examples/jsm/geometries/TextGeometry.js"></script>
-    <script src="https://threejs.org/examples/jsm/loaders/FontLoader.js"></script>
-    <script src="https://threejs.org/examples/jsm/loaders/FontLoader.js"></script>
     <script>
-        let scene, camera, renderer, globe, textMesh;
+        let scene, camera, renderer, globe;
 
         function init() {
             scene = new THREE.Scene();
@@ -42,36 +39,14 @@
             globe = new THREE.Mesh(globeGeometry, globeMaterial);
             scene.add(globe);
 
-            // Load font and create text
-            const loader = new THREE.FontLoader();
-            loader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', function (font) {
-                const textGeometry = new THREE.TextGeometry('robertrothe', {
-                    font: font,
-                    size: 0.2,
-                    height: 0.05,
-                    curveSegments: 12,
-                    bevelEnabled: false
-                });
-                const textMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-                textMesh = new THREE.Mesh(textGeometry, textMaterial);
-
-                // Position text around the globe
-                textMesh.position.set(-1.1, 0, 0);
-                textMesh.rotation.y = Math.PI / 4;
-                scene.add(textMesh);
-            });
-
             animate();
         }
 
         function animate() {
             requestAnimationFrame(animate);
 
-            // Rotate the globe and text
+            // Rotate the globe
             globe.rotation.y += 0.01;
-            if (textMesh) {
-                textMesh.rotation.y += 0.01;
-            }
 
             renderer.render(scene, camera);
         }
