@@ -5,119 +5,87 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ROBERTROTHE.COM</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: black; }
-        canvas { display: block; }
+        body { margin: 0; overflow: hidden; }
+        #container { width: 100vw; height: 100vh; }
     </style>
 </head>
 <body>
+    <div id="container"></div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://threejs.org/examples/jsm/loaders/FontLoader.js"></script>
     <script src="https://threejs.org/examples/jsm/geometries/TextGeometry.js"></script>
+    <script src="https://threejs.org/examples/jsm/loaders/FontLoader.js"></script>
+    <script src="https://threejs.org/examples/jsm/loaders/FontLoader.js"></script>
     <script>
-        let scene, camera, renderer, particleSystem, textMesh;
-        let particles = [];
-        const particleCount = 2000;
-        const duration = 5000; // animation duration in milliseconds
-        const startTime = Date.now();
-
-        init();
-        animate();
+        let scene, camera, renderer, globe, textMesh;
 
         function init() {
             scene = new THREE.Scene();
+            
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 5;
+
             renderer = new THREE.WebGLRenderer();
             renderer.setSize(window.innerWidth, window.innerHeight);
-            document.body.appendChild(renderer.domElement);
+            document.getElementById('container').appendChild(renderer.domElement);
+
+            // Add lighting
+            const ambientLight = new THREE.AmbientLight(0x404040);
+            scene.add(ambientLight);
+
+            const pointLight = new THREE.PointLight(0xffffff, 1);
+            pointLight.position.set(5, 5, 5);
+            scene.add(pointLight);
+
+            // Create the globe
+            const globeGeometry = new THREE.SphereGeometry(1, 32, 32);
+            const globeMaterial = new THREE.MeshBasicMaterial({ color: 0x0077ff, wireframe: true });
+            globe = new THREE.Mesh(globeGeometry, globeMaterial);
+            scene.add(globe);
 
             // Load font and create text
             const loader = new THREE.FontLoader();
             loader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', function (font) {
-                const textGeometry = new THREE.TextGeometry('ROBERTROTHE', {
+                const textGeometry = new THREE.TextGeometry('robertrothe', {
                     font: font,
-                    size: 1,
-                    height: 0.2,
+                    size: 0.2,
+                    height: 0.05,
                     curveSegments: 12,
-                    bevelEnabled: true,
-                    bevelThickness: 0.05,
-                    bevelSize: 0.05,
-                    bevelSegments: 5
+                    bevelEnabled: false
                 });
-
-                const textMaterial = new THREE.MeshPhongMaterial({ color: 0x00ff00 });
+                const textMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
                 textMesh = new THREE.Mesh(textGeometry, textMaterial);
-                textMesh.position.set(-3.5, 0, 0); // Center the text
+
+                // Position text around the globe
+                textMesh.position.set(-1.1, 0, 0);
+                textMesh.rotation.y = Math.PI / 4;
                 scene.add(textMesh);
-
-                // Create particles around the text
-                const particleGeometry = new THREE.BufferGeometry();
-                const positions = new Float32Array(particleCount * 3);
-                for (let i = 0; i < particleCount; i++) {
-                    const x = (Math.random() - 0.5) * 10;
-                    const y = (Math.random() - 0.5) * 10;
-                    const z = (Math.random() - 0.5) * 10;
-                    positions[i * 3] = x;
-                    positions[i * 3 + 1] = y;
-                    positions[i * 3 + 2] = z;
-                    particles.push({ x, y, z });
-                }
-                particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-
-                const particleMaterial = new THREE.PointsMaterial({
-                    color: 0xffffff,
-                    size: 0.1,
-                });
-
-                particleSystem = new THREE.Points(particleGeometry, particleMaterial);
-                scene.add(particleSystem);
             });
 
-            // Add lighting
-            const ambientLight = new THREE.AmbientLight(0x404040); // soft white light
-            scene.add(ambientLight);
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-            scene.add(directionalLight);
-
-            camera.position.z = 10;
-
-            window.addEventListener('resize', onWindowResize, false);
-        }
-
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+            animate();
         }
 
         function animate() {
             requestAnimationFrame(animate);
-            const elapsedTime = Date.now() - startTime;
 
-            const positions = particleSystem.geometry.attributes.position.array;
-
-            if (elapsedTime < duration) {
-                // Animate particles moving out from the text
-                for (let i = 0; i < particleCount; i++) {
-                    const p = particles[i];
-                    positions[i * 3] += p.x * 0.01;
-                    positions[i * 3 + 1] += p.y * 0.01;
-                    positions[i * 3 + 2] += p.z * 0.01;
-                }
-            } else {
-                // After particles spread, make them spin around the text
-                for (let i = 0; i < particleCount; i++) {
-                    const p = particles[i];
-                    const angle = 0.01 * (i % 360); // Adjust the spinning speed and direction
-                    const x = positions[i * 3];
-                    const z = positions[i * 3 + 2];
-                    positions[i * 3] = x * Math.cos(angle) - z * Math.sin(angle);
-                    positions[i * 3 + 2] = x * Math.sin(angle) + z * Math.cos(angle);
-                }
+            // Rotate the globe and text
+            globe.rotation.y += 0.01;
+            if (textMesh) {
+                textMesh.rotation.y += 0.01;
             }
 
-            particleSystem.geometry.attributes.position.needsUpdate = true;
             renderer.render(scene, camera);
         }
+
+        init();
+
+        // Handle window resize
+        window.addEventListener('resize', function () {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            renderer.setSize(width, height);
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+        });
     </script>
 </body>
 </html>
