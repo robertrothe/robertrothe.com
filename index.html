@@ -33,7 +33,7 @@
             // Load font and create text
             const loader = new THREE.FontLoader();
             loader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', function (font) {
-                const textGeometry = new THREE.TextGeometry('robertrothe', {
+                const textGeometry = new THREE.TextGeometry('ROBERTROTHE', {
                     font: font,
                     size: 1,
                     height: 0.2,
@@ -48,30 +48,29 @@
                 textMesh = new THREE.Mesh(textGeometry, textMaterial);
                 textMesh.position.set(-3.5, 0, 0); // Center the text
                 scene.add(textMesh);
-            });
 
-            // Create particles
-            const particleGeometry = new THREE.BufferGeometry();
-            const positions = new Float32Array(particleCount * 3);
-            for (let i = 0; i < particleCount; i++) {
-                positions[i * 3] = (Math.random() - 0.5) * 50;
-                positions[i * 3 + 1] = (Math.random() - 0.5) * 50;
-                positions[i * 3 + 2] = (Math.random() - 0.5) * 50;
-                particles.push({
-                    x: positions[i * 3],
-                    y: positions[i * 3 + 1],
-                    z: positions[i * 3 + 2]
+                // Create particles around the text
+                const particleGeometry = new THREE.BufferGeometry();
+                const positions = new Float32Array(particleCount * 3);
+                for (let i = 0; i < particleCount; i++) {
+                    const x = (Math.random() - 0.5) * 10;
+                    const y = (Math.random() - 0.5) * 10;
+                    const z = (Math.random() - 0.5) * 10;
+                    positions[i * 3] = x;
+                    positions[i * 3 + 1] = y;
+                    positions[i * 3 + 2] = z;
+                    particles.push({ x, y, z });
+                }
+                particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+                const particleMaterial = new THREE.PointsMaterial({
+                    color: 0xffffff,
+                    size: 0.1,
                 });
-            }
-            particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
 
-            const particleMaterial = new THREE.PointsMaterial({
-                color: 0xffffff,
-                size: 0.1,
+                particleSystem = new THREE.Points(particleGeometry, particleMaterial);
+                scene.add(particleSystem);
             });
-
-            particleSystem = new THREE.Points(particleGeometry, particleMaterial);
-            scene.add(particleSystem);
 
             // Add lighting
             const ambientLight = new THREE.AmbientLight(0x404040); // soft white light
@@ -94,28 +93,29 @@
             requestAnimationFrame(animate);
             const elapsedTime = Date.now() - startTime;
 
+            const positions = particleSystem.geometry.attributes.position.array;
+
             if (elapsedTime < duration) {
-                // Animate particles moving towards the center
-                const positions = particleSystem.geometry.attributes.position.array;
+                // Animate particles moving out from the text
                 for (let i = 0; i < particleCount; i++) {
-                    positions[i * 3] += (0 - positions[i * 3]) * 0.01;
-                    positions[i * 3 + 1] += (0 - positions[i * 3 + 1]) * 0.01;
-                    positions[i * 3 + 2] += (0 - positions[i * 3 + 2]) * 0.01;
+                    const p = particles[i];
+                    positions[i * 3] += p.x * 0.01;
+                    positions[i * 3 + 1] += p.y * 0.01;
+                    positions[i * 3 + 2] += p.z * 0.01;
                 }
-                particleSystem.geometry.attributes.position.needsUpdate = true;
             } else {
-                // After particles converge, make them spin around the text
-                const positions = particleSystem.geometry.attributes.position.array;
+                // After particles spread, make them spin around the text
                 for (let i = 0; i < particleCount; i++) {
                     const p = particles[i];
                     const angle = 0.01 * (i % 360); // Adjust the spinning speed and direction
-                    positions[i * 3] = p.x * Math.cos(angle) - p.z * Math.sin(angle);
-                    positions[i * 3 + 1] = p.y;
-                    positions[i * 3 + 2] = p.x * Math.sin(angle) + p.z * Math.cos(angle);
+                    const x = positions[i * 3];
+                    const z = positions[i * 3 + 2];
+                    positions[i * 3] = x * Math.cos(angle) - z * Math.sin(angle);
+                    positions[i * 3 + 2] = x * Math.sin(angle) + z * Math.cos(angle);
                 }
-                particleSystem.geometry.attributes.position.needsUpdate = true;
             }
 
+            particleSystem.geometry.attributes.position.needsUpdate = true;
             renderer.render(scene, camera);
         }
     </script>
