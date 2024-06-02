@@ -1,97 +1,96 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>robertrothe</title>
     <style>
-      body {
-        margin: 0;
-        overflow: hidden;
-      }
-      #canvas-container {
-        position: absolute;
-        width: 100%;
-        height: 100%;
-      }
+        body { margin: 0; overflow: hidden; background-color: black; }
+        canvas { display: block; }
+        .branding {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-family: 'Arial', sans-serif;
+            font-size: 2em;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 2s ease-in-out;
+        }
     </style>
-  </head>
-  <body>
-    <div id="canvas-container"></div>
+</head>
+<body>
+    <div class="branding">Robert Rothe</div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
     <script>
-      // Scene, Camera, Renderer
-      const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-      const renderer = new THREE.WebGLRenderer({ antialias: true });
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      document.getElementById('canvas-container').appendChild(renderer.domElement);
-
-      // Orbit Controls
-      const controls = new THREE.OrbitControls(camera, renderer.domElement);
-      controls.enablePan = false;
-      controls.enableZoom = true;
-      controls.minDistance = 5;
-      controls.maxDistance = 100;
-
-      // Globe (Earth)
-      const earthGeometry = new THREE.SphereGeometry(3, 32, 32);
-      const earthMaterial = new THREE.MeshBasicMaterial({
-        map: new THREE.TextureLoader().load('https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg'),
-      });
-      const earth = new THREE.Mesh(earthGeometry, earthMaterial);
-      scene.add(earth);
-
-      // Floating Text ("robertrothe")
-      const loader = new THREE.FontLoader();
-      loader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', function (font) {
-        const textGeometry = new THREE.TextGeometry('robertrothe', {
-          font: font,
-          size: 0.5,
-          height: 0.1,
-          curveSegments: 12,
-          bevelEnabled: true,
-          bevelThickness: 0.03,
-          bevelSize: 0.02,
-          bevelOffset: 0,
-          bevelSegments: 5,
-        });
-        const textMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-        const textMesh = new THREE.Mesh(textGeometry, textMaterial);
-
-        // Position the text and add it to the scene
-        textMesh.position.set(5, 0, 0);
-        scene.add(textMesh);
-
-        // Animation loop to orbit around the globe
-        const radius = 5;
-        let angle = 0;
-        function animateText() {
-          angle += 0.01;
-          textMesh.position.set(radius * Math.cos(angle), 0, radius * Math.sin(angle));
-          textMesh.lookAt(earth.position);
-        }
-
-        // Render loop
-        function render() {
-          requestAnimationFrame(render);
-          animateText();
-          controls.update();
-          renderer.render(scene, camera);
-        }
-        render();
-      });
-
-      // Camera position
-      camera.position.set(10, 5, 10);
-      camera.lookAt(earth.position);
-
-      // Adjust to window resizing
-      window.addEventListener('resize', function () {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
+        // Initialize scene, camera, and renderer
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        
         renderer.setSize(window.innerWidth, window.innerHeight);
-      });
+        document.body.appendChild(renderer.domElement);
+
+        // Particle system parameters
+        const particleCount = 2000;
+        const particles = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        const velocities = new Float32Array(particleCount * 3);
+
+        // Initialize particle positions and velocities
+        for (let i = 0; i < particleCount; i++) {
+            positions[i * 3] = (Math.random() - 0.5) * 50;
+            positions[i * 3 + 1] = (Math.random() - 0.5) * 50;
+            positions[i * 3 + 2] = (Math.random() - 0.5) * 50;
+            velocities[i * 3] = (Math.random() - 0.5) * 0.02;
+            velocities[i * 3 + 1] = (Math.random() - 0.5) * 0.02;
+            velocities[i * 3 + 2] = (Math.random() - 0.5) * 0.02;
+        }
+
+        particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        particles.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3));
+
+        // Create material for particles
+        const particleMaterial = new THREE.PointsMaterial({
+            color: 0xffffff,
+            size: 0.1,
+        });
+
+        const particleSystem = new THREE.Points(particles, particleMaterial);
+        scene.add(particleSystem);
+
+        camera.position.z = 10;
+
+        // Animation function
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Update particle positions for animation
+            for (let i = 0; i < particleCount; i++) {
+                positions[i * 3] += velocities[i * 3];
+                positions[i * 3 + 1] += velocities[i * 3 + 1];
+                positions[i * 3 + 2] += velocities[i * 3 + 2];
+
+                // Example animation: particles move towards the center
+                velocities[i * 3] += (0 - positions[i * 3]) * 0.0001;
+                velocities[i * 3 + 1] += (0 - positions[i * 3 + 1]) * 0.0001;
+                velocities[i * 3 + 2] += (0 - positions[i * 3 + 2]) * 0.0001;
+            }
+
+            particles.attributes.position.needsUpdate = true;
+
+            renderer.render(scene, camera);
+        }
+
+        // Start the animation
+        animate();
+
+        // Show branding after a delay
+        setTimeout(() => {
+            document.querySelector('.branding').style.opacity = 1;
+        }, 4000); // Adjust the delay to match the animation timing
     </script>
-  </body>
+</body>
 </html>
