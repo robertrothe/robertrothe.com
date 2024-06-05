@@ -23,6 +23,138 @@
 </head>
 <body>
     <h1>Das witzige Buch mit zufälligen Sprachfehlern</h1>
+    <h2>Ja, für den Zugriff auf GPT-3 oder ähnliche Modelle von OpenAI musst du zahlen. OpenAI bietet jedoch verschiedene Preismodelle und Mengenrabatte, sodass du den Dienst nach deinen Bedürfnissen nutzen kannst.
+
+Wenn du keine Kosten verursachen möchtest, kannst du ein Open-Source-Modell wie GPT-2 verwenden. GPT-2 ist leistungsfähig genug für viele Anwendungen und kann lokal auf deinem Computer oder über einen kostengünstigen Cloud-Dienst ausgeführt werden.
+
+Hier ist ein Beispiel, wie du GPT-2 mit Node.js und einem Express-Server verwenden kannst:
+
+### Voraussetzungen
+
+1. Installiere Node.js und npm.
+2. Installiere die notwendigen Python-Bibliotheken: `pip install transformers torch`.
+
+### backend.js (Node.js Server)
+```javascript
+const express = require('express');
+const { spawn } = require('child_process');
+const app = express();
+const port = 3000;
+
+app.use(express.static('public'));
+
+app.get('/generate-story', (req, res) => {
+    const pythonProcess = spawn('python', ['generate_story.py']);
+    
+    pythonProcess.stdout.on('data', (data) => {
+        res.send(data.toString());
+    });
+
+    pythonProcess.stderr.on('data', (data) => {
+        console.error(`stderr: ${data}`);
+    });
+
+    pythonProcess.on('close', (code) => {
+        console.log(`child process exited with code ${code}`);
+    });
+});
+
+app.listen(port, () => {
+    console.log(`Server listening at http://localhost:${port}`);
+});
+```
+
+### generate_story.py (Python-Skript)
+```python
+import torch
+from transformers import GPT2LMHeadModel, GPT2Tokenizer
+
+def generate_story(prompt):
+    model_name = "gpt2"
+    tokenizer = GPT2Tokenizer.from_pretrained(model_name)
+    model = GPT2LMHeadModel.from_pretrained(model_name)
+
+    inputs = tokenizer.encode(prompt, return_tensors="pt")
+    outputs = model.generate(inputs, max_length=200, num_return_sequences=1)
+
+    return tokenizer.decode(outputs[0], skip_special_tokens=True)
+
+if __name__ == "__main__":
+    prompt = "Es war einmal"
+    story = generate_story(prompt)
+    print(story)
+```
+
+### index.html (Frontend)
+```html
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random Story Generator</title>
+    <style>
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background-color: #f0f0f0;
+            color: #333;
+            padding: 20px;
+            text-align: center;
+        }
+        h1 {
+            color: #d32f2f;
+        }
+        p {
+            margin: 20px 0;
+            line-height: 1.6;
+        }
+        button {
+            background-color: #d32f2f;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #b71c1c;
+        }
+    </style>
+</head>
+<body>
+    <h1>Random Story Generator</h1>
+    <p id="story">Klicke auf den Button, um eine zufällige Geschichte zu generieren!</p>
+    <button onclick="generateStory()">Generiere Geschichte</button>
+    <script>
+        async function generateStory() {
+            const response = await fetch('/generate-story');
+            const story = await response.text();
+            document.getElementById("story").innerText = story;
+        }
+    </script>
+</body>
+</html>
+```
+
+### Schritte zur Ausführung:
+
+1. Erstelle ein Verzeichnis und lege darin die Dateien `backend.js`, `generate_story.py` und `index.html` ab.
+2. Installiere die notwendigen Node.js-Pakete:
+   ```sh
+   npm init -y
+   npm install express
+   ```
+3. Stelle sicher, dass Python und die Pakete `transformers` und `torch` installiert sind:
+   ```sh
+   pip install transformers torch
+   ```
+4. Starte den Server:
+   ```sh
+   node backend.js
+   ```
+5. Öffne einen Browser und navigiere zu `http://localhost:3000`, um die zufällige Geschichte zu generieren.
+
+Dieser Ansatz ermöglicht dir, GPT-2 lokal zu verwenden, ohne zusätzliche Kosten zu verursachen.</h2>
     <h2>Kapitel 1: Ein unerwartetes Abenteuer</h2>
     <p>Es war eine dunkle und strümtische Nacht. In einer kleinen Hüttez, irgendwo im Walde, lebte ein Mann namens Roflbert. Roflbert war ein eigentümlicher Charakter, bekannt für seine unvorhersehbaren Streiche und seine Liebe zu Käse.</p>
     <p>Eines Tages entschied Roflbert, auf eine Abenteuerreise zu gehen. Er packte seinen Rucksack, füllte ihn mit Käsebrot und Marmelade, und machte sich auf den Weg. Die ersten Stunden verliefen ohne besondere Vorkommnisse, doch plötzlich hörte er ein seltsames Geräusch hinter sich.</p>
