@@ -1,150 +1,129 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ROBERTROTHE.COM</title>
+    <title>2r1 Coin - Die Zukunft des Freigelds auf Blockchain-Basis</title>
     <style>
         body {
+            font-family: 'Arial', sans-serif;
             margin: 0;
-            overflow: hidden;
-            background: linear-gradient(to right, #141E30, #243B55);
+            padding: 0;
+            background-color: #f4f4f4;
+            color: #333;
         }
-
-        canvas {
-            display: block;
+        header {
+            background-color: #0a0a0a;
+            color: white;
+            text-align: center;
+            padding: 60px 0;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
-
-        h1 {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            font-family: Arial, sans-serif;
-            font-size: 26px;
-            color: #ffffff;
-            z-index: 10;
-            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5);
+        header h1 {
+            margin: 0;
+            font-size: 2.8em;
+            letter-spacing: 1px;
+            font-weight: 700;
+        }
+        header p {
+            font-size: 1.2em;
+            font-weight: 300;
+        }
+        .container {
+            width: 70%;
+            margin: 40px auto;
+            background-color: white;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            border-radius: 8px;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .section h2 {
+            color: #0a0a0a;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #457b9d;
+            display: inline-block;
+            padding-bottom: 5px;
+            font-weight: 600;
+        }
+        .section p, .section ul {
+            line-height: 1.7;
+            color: #555;
+        }
+        .section ul {
+            list-style-type: disc;
+            padding-left: 20px;
+        }
+        .cta-button {
+            display: inline-block;
+            background-color: #457b9d;
+            color: white;
+            padding: 12px 30px;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+            font-weight: 500;
+        }
+        .cta-button:hover {
+            background-color: #1d3557;
+        }
+        footer {
+            background-color: #0a0a0a;
+            color: white;
+            text-align: center;
+            padding: 20px 0;
+            margin-top: 40px;
+        }
+        footer p {
+            margin: 0;
+            font-size: 0.9em;
         }
     </style>
 </head>
-
 <body>
-    <h1>ROBERTROTHE</h1>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script>
-        // Scene setup
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
-
-        // Create a glowing cube
-        const cubeGeometry = new THREE.BoxGeometry();
-        const cubeMaterial = new THREE.MeshPhongMaterial({
-            color: 0x44aa88,
-            emissive: 0x44aa88,
-            emissiveIntensity: 1,
-            shininess: 100
-        });
-
-        const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
-        scene.add(cube);
-
-        // Add lighting
-        const ambientLight = new THREE.AmbientLight(0x404040, 2.0);
-        scene.add(ambientLight);
-
-        const pointLight = new THREE.PointLight(0xffffff, 1.5);
-        pointLight.position.set(5, 5, 5);
-        scene.add(pointLight);
-
-        // Create a particle system
-        const particleCount = 2000;
-        const particlesGeometry = new THREE.BufferGeometry();
-        const particlesMaterial = new THREE.PointsMaterial({
-            color: 0xffffff,
-            size: 0.05,
-            transparent: true
-        });
-
-        const positions = new Float32Array(particleCount * 3);
-        for (let i = 0; i < positions.length; i++) {
-            positions[i] = (Math.random() - 0.5) * 20;
-        }
-
-        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        const particles = new THREE.Points(particlesGeometry, particlesMaterial);
-        scene.add(particles);
-
-        // Add a shader-based background
-        const vertexShader = `
-            varying vec2 vUv;
-            void main() {
-                vUv = uv;
-                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-            }
-        `;
-
-        const fragmentShader = `
-            varying vec2 vUv;
-            void main() {
-                vec3 color1 = vec3(0.0, 0.1, 0.3);
-                vec3 color2 = vec3(0.2, 0.3, 0.8);
-                vec3 color3 = vec3(0.9, 0.9, 0.9);
-                vec3 color = mix(color1, color2, smoothstep(0.0, 1.0, vUv.y));
-                color = mix(color, color3, smoothstep(0.2, 0.8, vUv.x));
-                gl_FragColor = vec4(color, 1.0);
-            }
-        `;
-
-        const backgroundGeometry = new THREE.PlaneGeometry(2, 2);
-        const backgroundMaterial = new THREE.ShaderMaterial({
-            vertexShader,
-            fragmentShader,
-            side: THREE.DoubleSide
-        });
-
-        const backgroundMesh = new THREE.Mesh(backgroundGeometry, backgroundMaterial);
-        const backgroundScene = new THREE.Scene();
-        const backgroundCamera = new THREE.Camera();
-        backgroundScene.add(backgroundCamera);
-        backgroundScene.add(backgroundMesh);
-
-        // Camera position
-        camera.position.z = 5;
-
-        // Animation loop
-        function animate() {
-            requestAnimationFrame(animate);
-
-            // Rotate the cube
-            cube.rotation.x += 0.01;
-            cube.rotation.y += 0.01;
-
-            // Rotate the particles
-            particles.rotation.y += 0.001;
-            particles.rotation.x += 0.001;
-
-            // Render the background
-            renderer.autoClear = false;
-            renderer.clear();
-            renderer.render(backgroundScene, backgroundCamera);
-
-            // Render the main scene
-            renderer.render(scene, camera);
-        }
-        animate();
-
-        // Handle window resizing
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-    </script>
+    <header>
+        <h1>2r1 Coin</h1>
+        <p>Die Zukunft des Freigelds auf Blockchain-Basis</p>
+    </header>
+    <div class="container">
+        <div class="section">
+            <h2>Über den 2r1 Coin</h2>
+            <p>Der 2r1 Coin ist eine innovative Kryptowährung, die das Konzept des Freigelds auf Blockchain-Basis umsetzt. Basierend auf den Theorien von Silvio Gesell bietet 2r1 eine inflationsfreie und umlaufgesicherte Währung, die durch Mining geschürft werden kann. Unser Ziel ist es, eine stabile und gerechte Alternative zu traditionellen Währungen zu schaffen.</p>
+        </div>
+        <div class="section">
+            <h2>Eigenschaften des 2r1 Coins</h2>
+            <ul>
+                <li><strong>Freigeld-Konzept:</strong> Inflationsgeschützt und umlaufgesichert.</li>
+                <li><strong>Dezentral und Sicher:</strong> Basierend auf einer sicheren Blockchain-Technologie.</li>
+                <li><strong>Durch Mining geschürft:</strong> Jeder kann durch Mining am Netzwerk teilnehmen.</li>
+                <li><strong>Governance:</strong> Vollständig dezentralisiert, mit Community-gesteuerter Governance.</li>
+            </ul>
+        </div>
+        <div class="section">
+            <h2>Anwendungsfälle und Nutzen</h2>
+            <ul>
+                <li><strong>Zahlungen:</strong> Schnelle und günstige Transaktionen weltweit.</li>
+                <li><strong>Investment:</strong> Eine stabile Alternative zu traditionellen Anlageformen.</li>
+                <li><strong>Community-Projekte:</strong> Unterstützung von Projekten, die auf dem Freigeld-Konzept basieren.</li>
+            </ul>
+        </div>
+        <div class="section">
+            <h2>Wie man startet</h2>
+            <p>Um mit dem 2r1 Coin zu beginnen, folge diesen einfachen Schritten:</p>
+            <ol>
+                <li>Lade die offizielle 2r1 Wallet herunter und installiere sie auf deinem Gerät.</li>
+                <li>Erstelle ein neues Wallet und sichere deinen privaten Schlüssel.</li>
+                <li>Beginne mit dem Mining, um deine ersten 2r1 Coins zu verdienen.</li>
+                <li>Verbinde dich mit der Community und entdecke weitere Möglichkeiten, 2r1 zu nutzen.</li>
+            </ol>
+            <a href="#" class="cta-button">Offizielle 2r1 Wallet herunterladen</a>
+        </div>
+    </div>
+    <footer>
+        <p>&copy; 2024 2r1 Coin | Alle Rechte vorbehalten | Entwickelt von Robert Rothe</p>
+    </footer>
 </body>
-
 </html>
