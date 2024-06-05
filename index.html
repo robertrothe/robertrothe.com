@@ -1,307 +1,96 @@
 <!DOCTYPE html>
-<html lang="de">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ROBERTROTHE.COM</title>
-    <style>
-        body {
-            font-family: 'Comic Sans MS', cursive, sans-serif;
-            background-color: #f0f0f0;
-            color: #333;
-            padding: 20px;
-        }
-        h1, h2 {
-            text-align: center;
-            color: #d32f2f;
-        }
-        p {
-            margin: 20px 0;
-            line-height: 1.6;
-        }
-    </style>
+  <title>Random 3D Background Generator</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+  </style>
 </head>
 <body>
-    <h1>Das witzige Buch mit zufälligen Sprachfehlern</h1>
-    <p>Certainly! To build a Text-to-Speech (TTS) model that learns a voice from a video, we can follow these steps:
+  <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/build/three.min.js"></script>
+  <script>
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
 
-1. Extract audio from the video.
-2. Use a pre-trained model to transcribe the audio to text.
-3. Fine-tune a TTS model to replicate the voice observed in the video.
+    // Lights
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    scene.add(ambientLight);
 
-Here's a Python code snippet that helps you achieve this:
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+    directionalLight.position.set(1, 1, 1);
+    scene.add(directionalLight);
 
-### Step 1: Extract Audio from Video
+    // Function to generate random geometry
+    function generateRandomGeometry() {
+      const geometryTypes = [
+        THREE.BoxGeometry,
+        THREE.SphereGeometry,
+        THREE.TorusGeometry,
+        THREE.ConeGeometry,
+        THREE.CylinderGeometry,
+        THREE.PlaneGeometry
+      ];
 
-```python
-from moviepy.editor import VideoFileClip
-import os
+      const randomGeometryType = geometryTypes[Math.floor(Math.random() * geometryTypes.length)];
+      const randomArgs = [
+        Math.random() * 5 + 1, // Random size
+        Math.random() * 5 + 1,
+        Math.random() * 5 + 1,
+        Math.random() * 10 + 5, // Random segments
+        Math.random() * 10 + 5
+      ];
 
-# Function to extract audio from a video file
-def extract_audio(video_path, output_audio_path):
-    video = VideoFileClip(video_path)
-    video.audio.write_audiofile(output_audio_path)
+      return new randomGeometryType(...randomArgs);
+    }
 
-# Example usage
-video_path = 'input_video.mp4'
-output_audio_path = 'extracted_audio.wav'
-extract_audio(video_path, output_audio_path)
-```
+    // Function to generate random material
+    function generateRandomMaterial() {
+      const materialTypes = [
+        THREE.MeshBasicMaterial,
+        THREE.MeshLambertMaterial,
+        THREE.MeshPhongMaterial
+      ];
 
-### Step 2: Transcribe the Audio
+      const randomMaterialType = materialTypes[Math.floor(Math.random() * materialTypes.length)];
+      const randomColor = new THREE.Color(Math.random(), Math.random(), Math.random());
 
-To transcribe the audio, we can use a speech recognition model like `whisper`.
+      return new randomMaterialType({ color: randomColor });
+    }
 
-```bash
-pip install openai-whisper
-```
+    // Generate and add random objects to the scene
+    for (let i = 0; i < 20; i++) {
+      const geometry = generateRandomGeometry();
+      const material = generateRandomMaterial();
+      const mesh = new THREE.Mesh(geometry, material);
 
-```python
-import whisper
+      // Random position and rotation
+      mesh.position.set(
+        Math.random() * 20 - 10,
+        Math.random() * 20 - 10,
+        Math.random() * 20 - 10
+      );
+      mesh.rotation.set(
+        Math.random() * Math.PI * 2,
+        Math.random() * Math.PI * 2,
+        Math.random() * Math.PI * 2
+      );
 
-# Load Whisper model
-model = whisper.load_model("small")
+      scene.add(mesh);
+    }
 
-# Transcribe the audio to text
-result = model.transcribe(output_audio_path)
-transcription = result['text']
-print(transcription)
-```
+    // Animation loop
+    function animate() {
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+    }
 
-### Step 3: Fine-tune TTS Model
-
-For this, we can utilize a TTS model like `Coqui TTS`.
-
-```bash
-pip install TTS
-```
-
-```python
-import os
-from TTS.api import TTS
-
-# Set up a directory to store fine-tuned models
-os.makedirs('tts_output', exist_ok=True)
-
-# Load a pre-trained model
-tts = TTS(model_name="tts_models/en/ljspeech/tacotron2-DDC", progress_bar=True)
-
-# Prepare text and audio data for fine-tuning
-fine_tune_data = [{'text': transcription, 'audio': output_audio_path}]
-
-# Fine-tune the model (this is a simplified example)
-tts.finetune(fine_tune_data, output_path='tts_output/fine_tuned_model.pth')
-
-# Synthesize speech using the fine-tuned model
-tts = TTS(model_path='tts_output/fine_tuned_model.pth')
-tts.tts_to_file(text="Hello, world!", file_path="fine_tuned_speech.wav")
-```
-
-### Putting it All Together
-
-Here's the consolidated code:
-
-```python
-from moviepy.editor import VideoFileClip
-import whisper
-from TTS.api import TTS
-import os
-
-# Function to extract audio from a video file
-def extract_audio(video_path, output_audio_path):
-    video = VideoFileClip(video_path)
-    video.audio.write_audiofile(output_audio_path)
-
-# Function to transcribe the audio
-def transcribe_audio(audio_path):
-    model = whisper.load_model("small")
-    result = model.transcribe(audio_path)
-    return result['text']
-
-# Function to fine-tune TTS model
-def fine_tune_tts(transcription, audio_path):
-    os.makedirs('tts_output', exist_ok=True)
-    tts = TTS(model_name="tts_models/en/ljspeech/tacotron2-DDC", progress_bar=True)
-    fine_tune_data = [{'text': transcription, 'audio': audio_path}]
-    tts.finetune(fine_tune_data, output_path='tts_output/fine_tuned_model.pth')
-
-# Function to synthesize speech
-def synthesize_speech(text, output_path):
-    tts = TTS(model_path='tts_output/fine_tuned_model.pth')
-    tts.tts_to_file(text=text, file_path=output_path)
-
-# Main function
-def learn_and_synthesize(video_path, synthesize_text, synthesized_audio_path):
-    output_audio_path = 'extracted_audio.wav'
-    extract_audio(video_path, output_audio_path)
-    transcription = transcribe_audio(output_audio_path)
-    fine_tune_tts(transcription, output_audio_path)
-    synthesize_speech(synthesize_text, synthesized_audio_path)
-
-# Example usage
-video_path = 'input_video.mp4'
-synthesize_text = "Hello, my name is ChatGPT."
-synthesized_audio_path = 'fine_tuned_speech.wav'
-learn_and_synthesize(video_path, synthesize_text, synthesized_audio_path)
-```
-
-### Prerequisites:
-1. Install the required packages:
-```bash
-pip install openai-whisper moviepy TTS torch
-```
-
-2. Replace `input_video.mp4` with the path to your input video.
-
-### Notes:
-1. This is a simplified example. In practice, fine-tuning may need a more complex setup and more data.
-2. The quality of the synthesized voice depends on the data and model used.
-        
-        Ja, für den Zugriff auf GPT-3 oder ähnliche Modelle von OpenAI musst du zahlen. OpenAI bietet jedoch verschiedene Preismodelle und Mengenrabatte, sodass du den Dienst nach deinen Bedürfnissen nutzen kannst.
-
-Wenn du keine Kosten verursachen möchtest, kannst du ein Open-Source-Modell wie GPT-2 verwenden. GPT-2 ist leistungsfähig genug für viele Anwendungen und kann lokal auf deinem Computer oder über einen kostengünstigen Cloud-Dienst ausgeführt werden.
-
-Hier ist ein Beispiel, wie du GPT-2 mit Node.js und einem Express-Server verwenden kannst:
-
-### Voraussetzungen
-
-1. Installiere Node.js und npm.
-2. Installiere die notwendigen Python-Bibliotheken: `pip install transformers torch`.
-
-### backend.js (Node.js Server)
-```javascript
-const express = require('express');
-const { spawn } = require('child_process');
-const app = express();
-const port = 3000;
-
-app.use(express.static('public'));
-
-app.get('/generate-story', (req, res) => {
-    const pythonProcess = spawn('python', ['generate_story.py']);
-    
-    pythonProcess.stdout.on('data', (data) => {
-        res.send(data.toString());
-    });
-
-    pythonProcess.stderr.on('data', (data) => {
-        console.error(`stderr: ${data}`);
-    });
-
-    pythonProcess.on('close', (code) => {
-        console.log(`child process exited with code ${code}`);
-    });
-});
-
-app.listen(port, () => {
-    console.log(`Server listening at http://localhost:${port}`);
-});
-```
-
-### generate_story.py (Python-Skript)
-```python
-import torch
-from transformers import GPT2LMHeadModel, GPT2Tokenizer
-
-def generate_story(prompt):
-    model_name = "gpt2"
-    tokenizer = GPT2Tokenizer.from_pretrained(model_name)
-    model = GPT2LMHeadModel.from_pretrained(model_name)
-
-    inputs = tokenizer.encode(prompt, return_tensors="pt")
-    outputs = model.generate(inputs, max_length=200, num_return_sequences=1)
-
-    return tokenizer.decode(outputs[0], skip_special_tokens=True)
-
-if __name__ == "__main__":
-    prompt = "Es war einmal"
-    story = generate_story(prompt)
-    print(story)
-```
-
-### index.html (Frontend)
-```html
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Random Story Generator</title>
-    <style>
-        body {
-            font-family: 'Comic Sans MS', cursive, sans-serif;
-            background-color: #f0f0f0;
-            color: #333;
-            padding: 20px;
-            text-align: center;
-        }
-        h1 {
-            color: #d32f2f;
-        }
-        p {
-            margin: 20px 0;
-            line-height: 1.6;
-        }
-        button {
-            background-color: #d32f2f;
-            color: #fff;
-            border: none;
-            padding: 10px 20px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        button:hover {
-            background-color: #b71c1c;
-        }
-    </style>
-</head>
-<body>
-    <h1>Random Story Generator</h1>
-    <p id="story">Klicke auf den Button, um eine zufällige Geschichte zu generieren!</p>
-    <button onclick="generateStory()">Generiere Geschichte</button>
-    <script>
-        async function generateStory() {
-            const response = await fetch('/generate-story');
-            const story = await response.text();
-            document.getElementById("story").innerText = story;
-        }
-    </script>
-</body>
-</html>
-```
-
-### Schritte zur Ausführung:
-
-1. Erstelle ein Verzeichnis und lege darin die Dateien `backend.js`, `generate_story.py` und `index.html` ab.
-2. Installiere die notwendigen Node.js-Pakete:
-   ```sh
-   npm init -y
-   npm install express
-   ```
-3. Stelle sicher, dass Python und die Pakete `transformers` und `torch` installiert sind:
-   ```sh
-   pip install transformers torch
-   ```
-4. Starte den Server:
-   ```sh
-   node backend.js
-   ```
-5. Öffne einen Browser und navigiere zu `http://localhost:3000`, um die zufällige Geschichte zu generieren.
-
-Dieser Ansatz ermöglicht dir, GPT-2 lokal zu verwenden, ohne zusätzliche Kosten zu verursachen.</p>
-    <h2>Kapitel 1: Ein unerwartetes Abenteuer</h2>
-    <p>Es war eine dunkle und strümtische Nacht. In einer kleinen Hüttez, irgendwo im Walde, lebte ein Mann namens Roflbert. Roflbert war ein eigentümlicher Charakter, bekannt für seine unvorhersehbaren Streiche und seine Liebe zu Käse.</p>
-    <p>Eines Tages entschied Roflbert, auf eine Abenteuerreise zu gehen. Er packte seinen Rucksack, füllte ihn mit Käsebrot und Marmelade, und machte sich auf den Weg. Die ersten Stunden verliefen ohne besondere Vorkommnisse, doch plötzlich hörte er ein seltsames Geräusch hinter sich.</p>
-    <p>"Wer dort?" rief Roflbert, aber niemand antwortete. Er drehte sich um und sah... nichts. Doch als er sich wieder auf den Weg machen wollte, stolperte er über etwas und fiel der Länge nach hin.</p>
-    <h2>Kapitel 2: Der Käse des Schicksals</h2>
-    <p>Als Roflbert wieder zu sich kam, sah er einen kleinen Käseblock vor sich liegen. "Was für ein Glück!" dachte er sich und nahm den Käse an sich. Doch als er hineinbiss, wurde ihm plötzlich schwindelig und er fiel in einen tiefen Schlaf.</p>
-    <p>Als er aufwachte, fand er sich in einer fremden Welt wieder. Die Bäume waren aus Zuckerwatte, die Flüsse flossen mit Schokolade und die Vögel sangen Melodien, die er noch nie gehört hatte. "Wo bin ich?" fragte sich Roflbert und machte sich auf, diese neue Welt zu erkunden.</p>
-    <h2>Kapitel 3: Der seltsame Begleiter</h2>
-    <p>Auf seinem Weg traf Roflbert auf eine seltsame Kreatur. Es war eine Mischung aus einem Eichhörnchen und einem Kaktus, und es stellte sich als "Squiractus" vor. Squiractus sprach in Rätseln und half Roflbert, die Geheimnisse dieser neuen Welt zu entschlüsseln.</p>
-    <p>Zusammen erlebten sie viele Abenteuer, von der Rettung eines Schokoladenflusses vor dem Austrocknen bis hin zum Kampf gegen den bösen Zuckerwattenkönig. Am Ende erkannte Roflbert, dass die Welt, in die er gefallen war, ein Produkt seiner eigenen Fantasie war und dass er die Macht hatte, sie nach Belieben zu gestalten.</p>
-    <h2>Kapitel 4: Die Rückkehr nach Hause</h2>
-    <p>Nach vielen aufregenden Abenteuern entschied Roflbert, dass es an der Zeit war, nach Hause zurückzukehren. Mit Hilfe von Squiractus fand er den Weg zurück und wachte in seiner kleinen Hütte im Wald auf. Er hatte viel gelernt und war dankbar für die Erfahrungen, die er gemacht hatte.</p>
-    <p>Von diesem Tag an erzählte er jedem, der es hören wollte, von seinen Abenteuern in der Zuckerwattenwelt, und niemand konnte sich dem Charme seiner Geschichten entziehen. Roflbert lebte glücklich und zufrieden bis an sein Lebensende, immer mit einem Stück Käse in der Tasche und einem Lächeln auf den Lippen.</p>
-    <h2>Ende</h2>
+    animate();
+  </script>
 </body>
 </html>
