@@ -128,13 +128,20 @@
                     bevelOffset: 0,
                     bevelSegments: 5
                 });
+                textGeometry.computeBoundingBox();
+                const textWidth = textGeometry.boundingBox.max.x - textGeometry.boundingBox.min.x;
+                const textHeight = textGeometry.boundingBox.max.y - textGeometry.boundingBox.min.y;
+
                 const textMaterial = new THREE.MeshStandardMaterial({
                     color: randomColor,
                     roughness: 0.3,
                     metalness: 0
                 });
                 robertrotheText = new THREE.Mesh(textGeometry, textMaterial);
-                robertrotheText.position.set(-30, 20, 0);
+
+                // Center the text by setting its position to negative half of its width and height
+                robertrotheText.position.set(-0.5 * textWidth, -0.5 * textHeight, 0);
+
                 robertrotheText.userData = { url: "https://robertrothe.com" };
                 scene.add(robertrotheText);
             });
@@ -165,7 +172,6 @@
                 if (INTERSECTED !== intersects[0].object) {
                     if (INTERSECTED) {
                         if (INTERSECTED.parent === coinTextCenter) {
-                            // Reset the original color
                             coinText.material.color.set(0x007bff);
                         } else if (INTERSECTED === robertrotheText) {
                             robertrotheText.material.color.set(randomColor);
