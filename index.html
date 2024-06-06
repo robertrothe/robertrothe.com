@@ -1,96 +1,229 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Random 3D Background Generator</title>
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <title>ROBERTROTHE.COM</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #1e1e1e;
+            font-family: 'Arial', sans-serif;
+        }
+
+        #hover-cursor {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 30px;
+            height: 30px;
+            background-color: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 1000;
+            display: none;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://threejs.org/examples/jsm/loaders/FontLoader.js"></script>
+    <script src="https://threejs.org/examples/jsm/geometries/TextGeometry.js"></script>
 </head>
 <body>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/build/three.min.js"></script>
-  <script>
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
+    <div id="hover-cursor"></div>
 
-    // Lights
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-    scene.add(ambientLight);
+    <script>
+        // Three.js Scene Setup
+        let scene, camera, renderer, cube, raycaster, mouse, INTERSECTED, robertrotheText;
+        const particleCount = 1000;
+        const particles = [];
+        const hoverCursor = document.getElementById('hover-cursor');
 
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-    directionalLight.position.set(1, 1, 1);
-    scene.add(directionalLight);
+        // Random font choices
+        const fontUrls = [
+            'https://threejs.org/examples/fonts/helvetiker_bold.typeface.json',
+            'https://threejs.org/examples/fonts/optimer_bold.typeface.json',
+            'https://threejs.org/examples/fonts/gentilis_bold.typeface.json',
+        ];
 
-    // Function to generate random geometry
-    function generateRandomGeometry() {
-      const geometryTypes = [
-        THREE.BoxGeometry,
-        THREE.SphereGeometry,
-        THREE.TorusGeometry,
-        THREE.ConeGeometry,
-        THREE.CylinderGeometry,
-        THREE.PlaneGeometry
-      ];
+        // Randomly pick a font and color
+        const randomFontUrl = fontUrls[Math.floor(Math.random() * fontUrls.length)];
+        const randomColor = `#${Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')}`;
 
-      const randomGeometryType = geometryTypes[Math.floor(Math.random() * geometryTypes.length)];
-      const randomArgs = [
-        Math.random() * 5 + 1, // Random size
-        Math.random() * 5 + 1,
-        Math.random() * 5 + 1,
-        Math.random() * 10 + 5, // Random segments
-        Math.random() * 10 + 5
-      ];
+        function create3DText(message, size, color, position, fontUrl, url = null) {
+            const loader = new THREE.FontLoader();
+            loader.load(fontUrl, function (font) {
+                const textGeometry = new THREE.TextGeometry(message, {
+                    font: font,
+                    size: size,
+                    height: 2,
+                    curveSegments: 12,
+                    bevelEnabled: true,
+                    bevelThickness: 2,
+                    bevelSize: 1,
+                    bevelOffset: 0,
+                    bevelSegments: 5
+                });
+                const textMaterial = new THREE.MeshStandardMaterial({
+                    color: color,
+                    roughness: 0.3,
+                    metalness: 0 // Set metalness to 0
+                });
+                const mesh = new THREE.Mesh(textGeometry, textMaterial);
+                mesh.position.copy(position);
+                mesh.userData = { url };
+                scene.add(mesh);
+                return mesh;
+            });
+        }
 
-      return new randomGeometryType(...randomArgs);
-    }
+        function createDotParticles() {
+            const loader = new THREE.FontLoader();
+            loader.load('https://threejs.org/examples/fonts/helvetiker_bold.typeface.json', function (font) {
+                const dotGeometry = new THREE.TextGeometry(".", {
+                    font: font,
+                    size: 1,
+                    height: 0.1
+                });
+                const dotMaterial = new THREE.MeshPhongMaterial({ color: 0xffffff });
 
-    // Function to generate random material
-    function generateRandomMaterial() {
-      const materialTypes = [
-        THREE.MeshBasicMaterial,
-        THREE.MeshLambertMaterial,
-        THREE.MeshPhongMaterial
-      ];
+                for (let i = 0; i < particleCount; i++) {
+                    const dot = new THREE.Mesh(dotGeometry, dotMaterial);
+                    dot.position.set(
+                        (Math.random() - 0.5) * 200,
+                        (Math.random() - 0.5) * 200,
+                        (Math.random() - 0.5) * 200
+                    );
+                    particles.push(dot);
+                    scene.add(dot);
+                }
+            });
+        }
 
-      const randomMaterialType = materialTypes[Math.floor(Math.random() * materialTypes.length)];
-      const randomColor = new THREE.Color(Math.random(), Math.random(), Math.random());
+        function init() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 50;
 
-      return new randomMaterialType({ color: randomColor });
-    }
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0x1e1e1e);
+            document.body.appendChild(renderer.domElement);
 
-    // Generate and add random objects to the scene
-    for (let i = 0; i < 20; i++) {
-      const geometry = generateRandomGeometry();
-      const material = generateRandomMaterial();
-      const mesh = new THREE.Mesh(geometry, material);
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0x404040, 2);
+            scene.add(ambientLight);
 
-      // Random position and rotation
-      mesh.position.set(
-        Math.random() * 20 - 10,
-        Math.random() * 20 - 10,
-        Math.random() * 20 - 10
-      );
-      mesh.rotation.set(
-        Math.random() * Math.PI * 2,
-        Math.random() * Math.PI * 2,
-        Math.random() * Math.PI * 2
-      );
+            const pointLight = new THREE.PointLight(0xffffff, 2, 100);
+            pointLight.position.set(50, 50, 50);
+            scene.add(pointLight);
 
-      scene.add(mesh);
-    }
+            // Create a rotating cube
+            const geometry = new THREE.BoxGeometry(10, 10, 10);
+            const material = new THREE.MeshPhongMaterial({ color: 0x007bff, shininess: 100 });
+            cube = new THREE.Mesh(geometry, material);
+            cube.userData = { url: "https://github.com/robertrothe/2rcoin" };
+            scene.add(cube);
 
-    // Animation loop
-    function animate() {
-      requestAnimationFrame(animate);
-      renderer.render(scene, camera);
-    }
+            // Create the clickable "ROBERTROTHE.COM" text with random font and color
+            const loader = new THREE.FontLoader();
+            loader.load(randomFontUrl, function (font) {
+                const textGeometry = new THREE.TextGeometry("ROBERTROTHE.COM", {
+                    font: font,
+                    size: 5,
+                    height: 2,
+                    curveSegments: 12,
+                    bevelEnabled: true,
+                    bevelThickness: 2,
+                    bevelSize: 1,
+                    bevelOffset: 0,
+                    bevelSegments: 5
+                });
+                const textMaterial = new THREE.MeshStandardMaterial({
+                    color: randomColor,
+                    roughness: 0.3,
+                    metalness: 0 // Set metalness to 0
+                });
+                robertrotheText = new THREE.Mesh(textGeometry, textMaterial);
+                robertrotheText.position.set(-30, 20, 0);
+                robertrotheText.userData = { url: "https://robertrothe.com" };
+                scene.add(robertrotheText);
+            });
 
-    animate();
-  </script>
+            createDotParticles();
+
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+            document.addEventListener('mousemove', onMouseMove, false);
+            document.addEventListener('click', onMouseClick, false);
+
+            animate();
+        }
+
+        function onMouseMove(event) {
+            event.preventDefault();
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(scene.children);
+
+            if (intersects.length > 0) {
+                hoverCursor.style.display = 'block';
+                hoverCursor.style.left = `${event.clientX}px`;
+                hoverCursor.style.top = `${event.clientY}px`;
+
+                if (INTERSECTED != intersects[0].object) {
+                    INTERSECTED = intersects[0].object;
+                    if (INTERSECTED === cube || INTERSECTED === robertrotheText) {
+                        document.body.style.cursor = 'pointer';
+                        if (INTERSECTED === cube) {
+                            cube.material.color.set(0xff0000);
+                        } else {
+                            robertrotheText.material.color.set(0xffa500);
+                        }
+                    }
+                }
+            } else {
+                hoverCursor.style.display = 'none';
+                if (INTERSECTED) {
+                    if (INTERSECTED === cube) {
+                        cube.material.color.set(0x007bff);
+                    } else {
+                        robertrotheText.material.color.set(randomColor);
+                    }
+                }
+                document.body.style.cursor = 'default';
+                INTERSECTED = null;
+            }
+        }
+
+        function onMouseClick(event) {
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(scene.children);
+
+            if (intersects.length > 0) {
+                const clickedObject = intersects[0].object;
+                if (clickedObject.userData.url) {
+                    window.open(clickedObject.userData.url, '_blank');
+                }
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            cube.rotation.x += 0.01;
+            cube.rotation.y += 0.01;
+
+            particles.forEach(dot => {
+                dot.rotation.x += 0.01;
+                dot.rotation.y += 0.01;
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        // Initialize scene
+        init();
+    </script>
 </body>
 </html>
