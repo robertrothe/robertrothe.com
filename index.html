@@ -32,49 +32,19 @@
     <div id="hover-cursor"></div>
 
     <script>
-        // Three.js Scene Setup
-        let scene, camera, renderer, cube, raycaster, mouse, INTERSECTED, robertrotheText;
+        let scene, camera, renderer, raycaster, mouse, INTERSECTED, robertrotheText, coinText, coinTextCenter;
         const particleCount = 100;
         const particles = [];
         const hoverCursor = document.getElementById('hover-cursor');
 
-        // Random font choices
         const fontUrls = [
             'https://threejs.org/examples/fonts/helvetiker_bold.typeface.json',
             'https://threejs.org/examples/fonts/optimer_bold.typeface.json',
             'https://threejs.org/examples/fonts/gentilis_bold.typeface.json',
         ];
 
-        // Randomly pick a font and color
         const randomFontUrl = fontUrls[Math.floor(Math.random() * fontUrls.length)];
         const randomColor = `#${Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')}`;
-
-        function create3DText(message, size, color, position, fontUrl, url = null) {
-            const loader = new THREE.FontLoader();
-            loader.load(fontUrl, function (font) {
-                const textGeometry = new THREE.TextGeometry(message, {
-                    font: font,
-                    size: size,
-                    height: 2,
-                    curveSegments: 12,
-                    bevelEnabled: true,
-                    bevelThickness: 2,
-                    bevelSize: 1,
-                    bevelOffset: 0,
-                    bevelSegments: 5
-                });
-                const textMaterial = new THREE.MeshStandardMaterial({
-                    color: color,
-                    roughness: 0.3,
-                    metalness: 0 // Set metalness to 0
-                });
-                const mesh = new THREE.Mesh(textGeometry, textMaterial);
-                mesh.position.copy(position);
-                mesh.userData = { url };
-                scene.add(mesh);
-                return mesh;
-            });
-        }
 
         function createDotParticles() {
             const loader = new THREE.FontLoader();
@@ -109,7 +79,6 @@
             renderer.setClearColor(0x1e1e1e);
             document.body.appendChild(renderer.domElement);
 
-            // Lighting
             const ambientLight = new THREE.AmbientLight(0x404040, 2);
             scene.add(ambientLight);
 
@@ -117,15 +86,38 @@
             pointLight.position.set(50, 50, 50);
             scene.add(pointLight);
 
-            // Create a rotating cube
-            const geometry = new THREE.BoxGeometry(10, 10, 10);
-            const material = new THREE.MeshPhongMaterial({ color: 0x007bff, shininess: 100 });
-            cube = new THREE.Mesh(geometry, material);
-            cube.userData = { url: "https://github.com/robertrothe/2rcoin" };
-            scene.add(cube);
-
-            // Create the clickable "ROBERTROTHE.COM" text with random font and color
             const loader = new THREE.FontLoader();
+            loader.load('https://threejs.org/examples/fonts/helvetiker_bold.typeface.json', function (font) {
+                const textGeometry = new THREE.TextGeometry("2R COIN", {
+                    font: font,
+                    size: 5,
+                    height: 2,
+                    curveSegments: 12,
+                    bevelEnabled: true,
+                    bevelThickness: 2,
+                    bevelSize: 1,
+                    bevelOffset: 0,
+                    bevelSegments: 5
+                });
+
+                textGeometry.computeBoundingBox();
+                const textWidth = textGeometry.boundingBox.max.x - textGeometry.boundingBox.min.x;
+                const textHeight = textGeometry.boundingBox.max.y - textGeometry.boundingBox.min.y;
+
+                const textMaterial = new THREE.MeshPhongMaterial({
+                    color: 0x007bff,
+                    shininess: 100
+                });
+
+                coinText = new THREE.Mesh(textGeometry, textMaterial);
+                coinTextCenter = new THREE.Object3D();
+                coinText.position.set(-0.5 * textWidth, -0.5 * textHeight, 0);
+                coinTextCenter.add(coinText);
+                coinTextCenter.position.set(0, 0, 0);
+                coinTextCenter.userData = { url: "https://github.com/robertrothe/2rcoin" };
+                scene.add(coinTextCenter);
+            });
+
             loader.load(randomFontUrl, function (font) {
                 const textGeometry = new THREE.TextGeometry("ROBERTROTHE.COM", {
                     font: font,
@@ -141,7 +133,7 @@
                 const textMaterial = new THREE.MeshStandardMaterial({
                     color: randomColor,
                     roughness: 0.3,
-                    metalness: 0 // Set metalness to 0
+                    metalness: 0
                 });
                 robertrotheText = new THREE.Mesh(textGeometry, textMaterial);
                 robertrotheText.position.set(-30, 20, 0);
@@ -165,19 +157,29 @@
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
             raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(scene.children);
+            const intersects = raycaster.intersectObjects(scene.children, true);
 
             if (intersects.length > 0) {
                 hoverCursor.style.display = 'block';
                 hoverCursor.style.left = `${event.clientX}px`;
                 hoverCursor.style.top = `${event.clientY}px`;
 
-                if (INTERSECTED != intersects[0].object) {
+                if (INTERSECTED !== intersects[0].object) {
+                    if (INTERSECTED) {
+                        if (INTERSECTED.parent === coinTextCenter) {
+                            // Reset the original color
+                            coinText.material.color.set(0x007bff);
+                        } else if (INTERSECTED === robertrotheText) {
+                            robertrotheText.material.color.set(randomColor);
+                        }
+                    }
+
                     INTERSECTED = intersects[0].object;
-                    if (INTERSECTED === cube || INTERSECTED === robertrotheText) {
+
+                    if (INTERSECTED.parent === coinTextCenter || INTERSECTED === robertrotheText) {
                         document.body.style.cursor = 'pointer';
-                        if (INTERSECTED === cube) {
-                            cube.material.color.set(0xff0000);
+                        if (INTERSECTED.parent === coinTextCenter) {
+                            coinText.material.color.set(0xff0000);
                         } else {
                             robertrotheText.material.color.set(0xffa500);
                         }
@@ -186,9 +188,9 @@
             } else {
                 hoverCursor.style.display = 'none';
                 if (INTERSECTED) {
-                    if (INTERSECTED === cube) {
-                        cube.material.color.set(0x007bff);
-                    } else {
+                    if (INTERSECTED.parent === coinTextCenter) {
+                        coinText.material.color.set(0x007bff);
+                    } else if (INTERSECTED === robertrotheText) {
                         robertrotheText.material.color.set(randomColor);
                     }
                 }
@@ -199,21 +201,27 @@
 
         function onMouseClick(event) {
             raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(scene.children);
+            const intersects = raycaster.intersectObjects(scene.children, true);
 
             if (intersects.length > 0) {
                 const clickedObject = intersects[0].object;
-                if (clickedObject.userData.url) {
-                    window.open(clickedObject.userData.url, '_blank');
+                const clickableParent = clickedObject.parent === coinTextCenter ? clickedObject.parent : clickedObject;
+
+                if (clickableParent.userData.url) {
+                    window.open(clickableParent.userData.url, '_blank');
                 }
             }
         }
 
         function animate() {
             requestAnimationFrame(animate);
-            cube.rotation.x += 0.01;
-            cube.rotation.y += 0.01;
 
+            // Rotate the centered text
+            if (coinTextCenter) {
+                coinTextCenter.rotation.y += 0.01;
+            }
+
+            // Rotate each particle
             particles.forEach(dot => {
                 dot.rotation.x += 0.01;
                 dot.rotation.y += 0.01;
@@ -222,7 +230,7 @@
             renderer.render(scene, camera);
         }
 
-        // Initialize scene
+        // Initialize the scene
         init();
     </script>
 </body>
