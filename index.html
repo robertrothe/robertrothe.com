@@ -72,6 +72,71 @@
     <script src="https://threejs.org/examples/jsm/geometries/TextGeometry.js"></script>
 </head>
 <body>
+    <p>Jailbreaking your iPhone to run a non-iOS operating system such as Debian is a complex and potentially risky process that may void your warranty and expose your device to security vulnerabilities. However, I can outline the general steps for you:
+
+### Steps to Jailbreak and Install Debian on an iPhone
+
+1. **Backup Your Device**:
+   - Use iTunes or iCloud to back up your iPhone to avoid losing any data.
+
+2. **Jailbreak Your iPhone**:
+   - Choose a jailbreak tool compatible with your iPhone model and iOS version. Popular tools include Checkra1n and unc0ver.
+   - Follow the instructions provided by the jailbreak tool to jailbreak your device.
+
+3. **Install a Terminal App**:
+   - Once jailbroken, install a terminal app like `NewTerm` from Cydia or Sileo.
+
+4. **Install the Necessary Packages**:
+   - Open the terminal app and install packages like `Procursus` or `Telesphoreo` bootstrap to have the necessary utilities and package managers (e.g., APT).
+
+5. **Download and Install Debian**:
+   - Use the terminal to download a Debian root filesystem. You can find ARM-compatible Debian root filesystems online.
+   - Extract the Debian root filesystem to a directory on your iPhone.
+
+6. **Chroot into Debian**:
+   - Use the `chroot` command to change the root directory to the Debian filesystem:
+     ```sh
+     chroot /path/to/debian /bin/bash
+     ```
+   - This will give you a Debian environment within your iPhone.
+
+7. **Set Up and Configure Debian**:
+   - Within the chroot environment, you can configure and install necessary packages using `apt-get`.
+
+### Example Code for Terminal Commands
+
+```sh
+# Install bootstrap utilities
+apt-get update
+apt-get install wget tar
+
+# Download Debian root filesystem
+wget http://example.com/debian-rootfs.tar.gz
+
+# Extract Debian root filesystem
+mkdir /debian
+tar -xzf debian-rootfs.tar.gz -C /debian
+
+# Chroot into Debian
+chroot /debian /bin/bash
+```
+
+### Notes and Warnings
+- **Risk of Bricking**: There's a risk of bricking your device. Proceed with caution.
+- **Security Risks**: Jailbreaking removes many of the security protections provided by iOS.
+- **Legal Issues**: Depending on your jurisdiction, jailbreaking might be against the terms of service of Apple and can void your warranty.
+- **Hardware Compatibility**: Not all iPhone hardware features will work under Debian.
+
+### Conclusion
+This process is highly advanced and should only be attempted if you are comfortable with the potential risks and have a strong understanding of both iOS and Linux systems.
+
+---
+
+**Hotkey Suggestions:**
+- **W: Yes, Continue** - Confirm, advance to the next step, proceed, again.
+- **A: Alt** - Explore alternative approaches, compare & rank them.
+- **S: Explain** - Explain each line of code step by step, adding descriptive comments.
+- **D: Iterate, Improve, Evolve** - Note 3 critiques or edge cases, propose improvements.</p>
     <div id="hover-cursor"></div>
     <div id="overlay">
         <h1>2R Coin Options</h1>
