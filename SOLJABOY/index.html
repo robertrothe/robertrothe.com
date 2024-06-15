@@ -12,8 +12,51 @@
       height: 100%;
       margin: 0;
       font-family: 'Roboto', sans-serif;
-      background: #808080; /* Gray background */
+      background-color: #808080; /* Gray background */
       color: #333;
+      overflow: hidden; /* Hide overflow to prevent scrollbars */
+    }
+
+    /* Container to hold the spinning logos */
+    .background-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #808080;
+      overflow: hidden;
+      z-index: -1; /* Send it to the back */
+    }
+
+    /* Single spinning logo style */
+    .logo {
+      width: 12.5%; /* Makes 8 logos fit across the width (100 / 8) */
+      height: 12.5%; /* Makes 8 logos fit across the height (100 / 8) */
+      float: left;
+      background: url('assets/logo.png') no-repeat center center;
+      background-size: contain;
+      animation: spin 10s infinite linear;
+    }
+
+    /* Correct readability after 180 degrees using a pseudo-element */
+    .logo::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: inherit;
+      transform: rotateY(180deg);
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    /* Keyframes for the spinning animation */
+    @keyframes spin {
+      0% { transform: rotateY(0deg); }
+      100% { transform: rotateY(360deg); }
     }
 
     .main-content {
@@ -21,6 +64,8 @@
       border-radius: 15px;
       padding: 20px;
       margin-top: 50px;
+      position: relative; /* Above the spinning logos */
+      z-index: 10;
     }
 
     .navbar-custom {
@@ -40,6 +85,7 @@
       position: fixed;
       bottom: 0;
       width: 100%;
+      z-index: 10;
     }
 
     .section {
@@ -55,45 +101,28 @@
       color: #007bff;
     }
 
-    /* Logo spinning animation */
-    @keyframes spin {
-      0% {
-        transform: rotateY(0deg);
-      }
-      100% {
-        transform: rotateY(360deg);
-      }
-    }
-
-    .logo {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      width: 100px; /* Adjust size as needed */
-      height: 100px; /* Adjust size as needed */
-      background: url('assets/logo.png') no-repeat center;
-      background-size: contain;
-      animation: spin 10s infinite linear;
-    }
-
-    /* Correct readability after 180 degrees */
-    .logo::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: inherit;
-      transform: rotateY(180deg);
-      opacity: 0.5;
-      pointer-events: none;
-    }
   </style>
 </head>
 <body>
 
-<div class="logo"></div> <!-- Logo placed at the top left -->
+<div class="background-container">
+  <!-- Create 64 (8x8) logo elements -->
+  <div class="logo"></div><div class="logo"></div><div class="logo"></div><div class="logo"></div>
+  <div class="logo"></div><div class="logo"></div><div class="logo"></div><div class="logo"></div>
+  <div class="logo"></div><div class="logo"></div><div class="logo"></div><div class="logo"></div>
+  <div class="logo"></div><div class="logo"></div><div class="logo"></div><div class="logo"></div>
+  <div class="logo"></div><div class="logo"></div><div class="logo"></div><div class="logo"></div>
+  <div class="logo"></div><div class="logo"></div><div class="logo"></div><div class="logo"></div>
+  <div class="logo"></div><div class="logo"></div><div class="logo"></div><div class="logo"></div>
+  <div class="logo"></div><div class="logo"></div><div class="logo"></div><div class="logo"></div>
+  <div class="logo"></div><div class="logo"></div><div class="logo"></div><div class="logo"></div>
+  <div class="logo"></div><div class="logo"></div><div class="logo"></div><div class="logo"></div>
+  <div class="logo"></div><div class="logo"></div><div class="logo"></div><div class="logo"></div>
+  <div class="logo"></div><div class="logo"></div><div class="logo"></div><div class="logo"></div>
+  <div class="logo"></div><div class="logo"></div><div class="logo"></div><div class="logo"></div>
+  <div class="logo"></div><div class="logo"></div><div class="logo"></div><div class="logo"></div>
+  <div class="logo"></div><div class="logo"></div><div class="logo"></div><div class="logo"></div>
+</div>
 
 <div class="container mt-5">
   <div class="main-content">
