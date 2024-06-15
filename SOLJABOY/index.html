@@ -2,11 +2,111 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SOLJABOY Token</title>
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body, html {
+      height: 100%;
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    .bg-image {
+      /* The image used */
+      background-image: url("assets/logo.png");
+
+      /* Add the blur effect */
+      filter: blur(8px);
+      -webkit-filter: blur(8px);
+
+      /* Full height */
+      height: 100%;
+
+      /* Center and scale the image nicely */
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: cover;
+    }
+
+    /* Position text in the center of the page/image */
+    .bg-text {
+      background-color: rgb(0,0,0); /* Fallback color */
+      background-color: rgba(0,0,0, 0.4); /* Black w/opacity/see-through */
+      color: white;
+      font-weight: bold;
+      border: 3px solid #f1f1f1;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 2;
+      width: 80%;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .container {
+      padding: 20px;
+      text-align: center;
+    }
+
+    h1 {
+      text-transform: uppercase;
+    }
+
+    p {
+      margin: 15px 0;
+    }
+
+    .roadmap {
+      margin-top: 40px;
+    }
+
+    .roadmap h2, .team h2, .faq h2 {
+      text-decoration: underline;
+    }
+  </style>
 </head>
 <body>
-  <h1>Welcome to the Official SOLJABOY Token Page</h1>
-  <p>This is the official page for the SOLJABOY token.</p>
-  <img src="assets/logo.png" alt="SOLJABOY Logo" width="200">
+
+<div class="bg-image"></div>
+
+<div class="bg-text">
+  <div class="container">
+    <h1>Welcome to the Official SOLJABOY Token Page</h1>
+    <p>This is the official page for the SOLJABOY token, a new utility token on the Solana network designed to revolutionize digital transactions.</p>
+
+    <div class="roadmap">
+      <h2>Roadmap</h2>
+      <p>Here's what's coming up for SOLJABOY:</p>
+      <ul>
+        <li><strong>Q3 2024:</strong> Launch of the token on Solana mainnet.</li>
+        <li><strong>Q4 2024:</strong> Partnerships with major digital marketplaces.</li>
+        <li><strong>Q1 2025:</strong> Development of SOLJABOY wallet app.</li>
+        <li><strong>Q2 2025:</strong> Expansion into additional digital services.</li>
+      </ul>
+    </div>
+
+    <div class="team">
+      <h2>Team</h2>
+      <p>Meet the minds behind SOLJABOY:</p>
+      <ul>
+        <li>John Doe - Founder & CEO</li>
+        <li>Jane Smith - CTO</li>
+        <li>Emily Johnson - CFO</li>
+      </ul>
+    </div>
+
+    <div class="faq">
+      <h2>FAQ</h2>
+      <p>Some frequently asked questions:</p>
+      <ul>
+        <li><strong>What is SOLJABOY?</strong> SOLJABOY is a utility token for digital transactions on the Solana network.</li>
+        <li><strong>How can I purchase SOLJABOY?</strong> Details will be announced soon.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
