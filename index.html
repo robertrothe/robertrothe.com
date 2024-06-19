@@ -50,43 +50,92 @@
     </style>
 </head>
 <body>
-    <br>
-    <br>
     <canvas id="matrixCanvas"></canvas>
     <div class="matrix-title">robertrothe.com</div>
     <div class="market-container">
         <h1 class="section-title">robertrothecoin Market</h1>
         <div class="market-section">
             <div>Current Price</div>
-            <div>$65196.73</div>
+            <div id="current-price">1 Satoshi</div>
         </div>
         <div class="market-section">
             <div>Buy robertrothecoin</div>
-            <input type="text" placeholder="Amount in BTC">
-            <button>Buy</button>
+            <input type="text" id="buy-amount" placeholder="Amount in robertrothecoin">
+            <button onclick="buyCoin()">Buy</button>
         </div>
         <div class="market-section">
             <div>Sell robertrothecoin</div>
-            <input type="text" placeholder="Amount in robertrothecoin">
-            <button>Sell</button>
+            <input type="text" id="sell-amount" placeholder="Amount in robertrothecoin">
+            <button onclick="sellCoin()">Sell</button>
         </div>
         <div class="market-section">
             <div>Account Balance</div>
-            <div>$0.00</div>
+            <div id="account-balance">0 robertrothecoin</div>
         </div>
         <div class="market-section">
             <div>Transaction History</div>
-            <div>No transactions yet.</div>
+            <div id="transaction-history">No transactions yet.</div>
         </div>
     </div>
     <script>
-        // Function to generate a title with random capitalization
-        function randomCaps(text) {
-            return text.split('').map(char => Math.random() > 0.5 ? char.toUpperCase() : char.toLowerCase()).join('');
+        const backendUrl = "https://<ngrok-public-url>";
+
+        async function fetchAccountBalance() {
+            const response = await fetch(`${backendUrl}/account_balance?account=user`);
+            const data = await response.json();
+            document.getElementById('account-balance').textContent = `${data.balance} robertrothecoin`;
         }
 
-        document.querySelector('.matrix-title').textContent = randomCaps('robertrothe.com');
+        async function fetchTransactionHistory() {
+            const response = await fetch(`${backendUrl}/transaction_history?account=user`);
+            const data = await response.json();
+            const historyElement = document.getElementById('transaction-history');
+            historyElement.innerHTML = '';
+            data.history.forEach(tx => {
+                const txElement = document.createElement('div');
+                txElement.textContent = `${tx.sender} sent ${tx.amount} robertrothecoin to ${tx.receiver}`;
+                historyElement.appendChild(txElement);
+            });
+        }
 
+        async function buyCoin() {
+            const amount = document.getElementById('buy-amount').value;
+            const response = await fetch(`${backendUrl}/add_transaction`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ sender: 'user', receiver: 'system', amount: amount })
+            });
+            const data = await response.json();
+            if (data.message) {
+                fetchAccountBalance();
+                fetchTransactionHistory();
+            }
+        }
+
+        async function sellCoin() {
+            const amount = document.getElementById('sell-amount').value;
+            const response = await fetch(`${backendUrl}/add_transaction`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ sender: 'system', receiver: 'user', amount: amount })
+            });
+            const data = await response.json();
+            if (data.message) {
+                fetchAccountBalance();
+                fetchTransactionHistory();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchAccountBalance();
+            fetchTransactionHistory();
+        });
+
+        // Matrix effect
         const canvas = document.getElementById("matrixCanvas");
         const context = canvas.getContext("2d");
 
@@ -101,15 +150,17 @@
         function drawMatrix() {
             context.fillStyle = "rgba(0, 0, 0, 0.05)";
             context.fillRect(0, 0, canvas.width, canvas.height);
-
             context.fillStyle = "#00FF00";
-            context.font = `${fontSize}px 'Courier New'`;
+            context.font = `${fontSize}px monospace`;
 
             for (let i = 0; i < drops.length; i++) {
-                const text = characters.charAt(Math.floor(Math.random() * characters.length));
-                context.fillText(text, i * fontSize, drops[i] * fontSize);
+                const text = characters[Math.floor(Math.random() * characters.length)];
+                const x = i * fontSize;
+                const y = drops[i] * fontSize;
 
-                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                context.fillText(text, x, y);
+
+                if (y > canvas.height && Math.random() > 0.975) {
                     drops[i] = 0;
                 }
 
@@ -117,13 +168,7 @@
             }
         }
 
-        setInterval(drawMatrix, 33);
-
-        // Adjust canvas size on window resize
-        window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        });
+        setInterval(drawMatrix, 50);
     </script>
 </body>
 </html>
