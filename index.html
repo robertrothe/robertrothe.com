@@ -3,22 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RoBeRtRoThE.CoM</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <title>robertrothe.com</title>
     <style>
         body {
             margin: 0;
-            overflow: hidden;
             background-color: black;
             color: #00FF00;
             font-family: 'Courier New', Courier, monospace;
-        }
-        canvas {
-            display: block;
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: -1;
         }
         .matrix-title {
             position: absolute;
@@ -31,77 +22,68 @@
             text-shadow: 0 0 10px #00FF00, 0 0 20px #00FF00;
         }
         .market-container {
-            position: relative;
-            z-index: 1;
-            background: rgba(0, 0, 0, 0.8);
-            border: 1px solid #00FF00;
             padding: 20px;
-            border-radius: 10px;
         }
-        .input, .button {
-            background: rgba(0, 0, 0, 0.5);
+        .section-title {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        .market-section {
+            margin-bottom: 20px;
+        }
+        .market-section input, .market-section button {
+            display: block;
+            margin-top: 10px;
+            padding: 10px;
+            font-size: 18px;
+            background-color: black;
             border: 1px solid #00FF00;
             color: #00FF00;
-            padding: 5px 10px;
-            border-radius: 5px;
         }
-        .button {
-            cursor: pointer;
+        canvas {
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
         }
     </style>
 </head>
 <body>
     <canvas id="matrixCanvas"></canvas>
-    <div class="matrix-title" id="randomTitle"></div>
-
-    <div class="container mx-auto p-4 market-container mt-20">
-        <h1 class="text-3xl font-bold mb-4">robertrothecoin Market</h1>
-        <div class="bg-transparent p-6 rounded shadow-md mb-4">
-            <h2 class="text-2xl font-semibold mb-2">Current Price</h2>
-            <p id="current-price" class="text-xl">$0.00</p>
+    <div class="matrix-title">robertrothe.com</div>
+    <div class="market-container">
+        <h1 class="section-title">robertrothecoin Market</h1>
+        <div class="market-section">
+            <div>Current Price</div>
+            <div>$65196.73</div>
         </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div class="bg-transparent p-6 rounded shadow-md">
-                <h2 class="text-2xl font-semibold mb-2">Buy robertrothecoin</h2>
-                <form id="buy-form">
-                    <label for="buy-amount" class="block text-sm font-medium">Amount in BTC</label>
-                    <input type="number" id="buy-amount" class="input mt-1 w-full" step="0.0001" required>
-                    <button type="submit" class="button mt-4 w-full">Buy</button>
-                </form>
-            </div>
-
-            <div class="bg-transparent p-6 rounded shadow-md">
-                <h2 class="text-2xl font-semibold mb-2">Sell robertrothecoin</h2>
-                <form id="sell-form">
-                    <label for="sell-amount" class="block text-sm font-medium">Amount in robertrothecoin</label>
-                    <input type="number" id="sell-amount" class="input mt-1 w-full" step="0.0001" required>
-                    <button type="submit" class="button mt-4 w-full">Sell</button>
-                </form>
-            </div>
+        <div class="market-section">
+            <div>Buy robertrothecoin</div>
+            <input type="text" placeholder="Amount in BTC">
+            <button>Buy</button>
         </div>
-
-        <div class="bg-transparent p-6 rounded shadow-md mb-4">
-            <h2 class="text-2xl font-semibold mb-2">Account Balance</h2>
-            <p id="account-balance" class="text-xl">$0.00</p>
+        <div class="market-section">
+            <div>Sell robertrothecoin</div>
+            <input type="text" placeholder="Amount in robertrothecoin">
+            <button>Sell</button>
         </div>
-
-        <div class="bg-transparent p-6 rounded shadow-md">
-            <h2 class="text-2xl font-semibold mb-2">Transaction History</h2>
-            <ul id="transaction-history" class="list-disc list-inside">
-                <li>No transactions yet.</li>
-            </ul>
+        <div class="market-section">
+            <div>Account Balance</div>
+            <div>$0.00</div>
+        </div>
+        <div class="market-section">
+            <div>Transaction History</div>
+            <div>No transactions yet.</div>
         </div>
     </div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"></script>
     <script>
         // Function to generate a title with random capitalization
         function randomCaps(text) {
             return text.split('').map(char => Math.random() > 0.5 ? char.toUpperCase() : char.toLowerCase()).join('');
         }
 
-        document.getElementById('randomTitle').textContent = randomCaps('robertrothe.com');
+        document.querySelector('.matrix-title').textContent = randomCaps('robertrothe.com');
 
         const canvas = document.getElementById("matrixCanvas");
         const context = canvas.getContext("2d");
@@ -135,50 +117,11 @@
 
         setInterval(drawMatrix, 33);
 
-        const apiUrl = 'https://api.coindesk.com/v1/bpi/currentprice/BTC.json';
-
-        document.addEventListener('DOMContentLoaded', () => {
-            // Fetch current price
-            fetchCurrentPrice();
-
-            // Handle buy form submission
-            document.getElementById('buy-form').addEventListener('submit', handleBuy);
-
-            // Handle sell form submission
-            document.getElementById('sell-form').addEventListener('submit', handleSell);
+        // Adjust canvas size on window resize
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
         });
-
-        function fetchCurrentPrice() {
-            axios.get(apiUrl)
-                .then(response => {
-                    const price = response.data.bpi.USD.rate_float;
-                    document.getElementById('current-price').textContent = `$${price.toFixed(2)}`;
-                })
-                .catch(error => console.error('Error fetching current price:', error));
-        }
-
-        function handleBuy(event) {
-            event.preventDefault();
-            const amount = parseFloat(document.getElementById('buy-amount').value);
-            // Process the buy transaction
-            // Save the transaction to the history
-            updateTransactionHistory('Bought', amount, 'BTC');
-        }
-
-        function handleSell(event) {
-            event.preventDefault();
-            const amount = parseFloat(document.getElementById('sell-amount').value);
-            // Process the sell transaction
-            // Save the transaction to the history
-            updateTransactionHistory('Sold', amount, 'robertrothecoin');
-        }
-
-        function updateTransactionHistory(action, amount, currency) {
-            const transactionHistory = document.getElementById('transaction-history');
-            const transaction = document.createElement('li');
-            transaction.textContent = `${action} ${amount.toFixed(4)} ${currency}`;
-            transactionHistory.appendChild(transaction);
-        }
     </script>
 </body>
 </html>
