@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>roor</title>
+    <title>Robertrothe</title>
     <style>
         /* Dark Theme */
         body {
@@ -59,7 +59,7 @@
     </style>
 </head>
 <body>
-    <h1>ro1</h1>
+    <h1>robertrothe</h1>
     <div id="transcript">
         <p>Transkription erscheint hier...</p>
     </div>
@@ -85,18 +85,6 @@
                 .replace(/Ã¼/g, "ü")  // ü
                 .replace(/ÃŸ/g, "ß"); // ß
         }
-
-        // Funktion, um den Inhalt des Transkriptionsbereichs zu kopieren
-        function copyTranscript() {
-            const transcriptText = transcriptDiv.textContent;
-            if (transcriptText.trim() !== "") {
-                console.log("Kopierter Inhalt:", transcriptText); // Zeigt den Inhalt im Browser-Log an
-                // Hier könntest du den Text an einen Server senden oder lokal speichern
-            }
-        }
-
-        // Jede Minute den Transkript-Inhalt kopieren
-        setInterval(copyTranscript, 60000); // 60 Sekunden
 
         // Überprüfen, ob der Browser die Web Speech API unterstützt
         if ("webkitSpeechRecognition" in window) {
@@ -126,6 +114,7 @@
 
             recognition.onend = () => {
                 if (isRecording) {
+                    // Füge einen Punkt am Ende hinzu, wenn die Aufnahme neu startet
                     fullTranscript += ". ";
                     transcriptDiv.innerHTML = `<p>${fullTranscript}</p>`;
                     recognition.start(); // Neu starten, wenn die Aufnahme unerwartet stoppt
@@ -153,9 +142,11 @@
             });
 
             downloadBtn.addEventListener("click", () => {
+                // Eindeutigen Dateinamen mit Zeitstempel erstellen
                 const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
                 const filename = `transkript-${timestamp}.txt`;
 
+                // Textfile erstellen und herunterladen
                 const blob = new Blob([fullTranscript], { type: "text/plain;charset=UTF-8" });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement("a");
