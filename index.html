@@ -5,69 +5,56 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Robertrothe</title>
     <style>
-        /* Dark Theme */
+        /* Terminal-Look */
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-family: monospace;
+            background-color: #000;
+            color: #0f0;
             margin: 0;
             padding: 20px;
-            background-color: #121212;
-            color: #e0e0e0;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 100vh;
         }
-        h1 {
-            font-size: 24px;
-            font-weight: 500;
-            margin-bottom: 20px;
-            color: #ffffff;
+        pre {
+            font-size: 12px;
+            margin: 0;
+            white-space: pre-wrap;
         }
         #transcript {
             width: 80%;
             max-width: 600px;
             height: 300px;
             padding: 15px;
-            border: 1px solid #333;
-            background-color: #1e1e1e;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            border: 1px solid #0f0;
+            background-color: #000;
+            border-radius: 0;
             overflow-y: auto;
-            font-size: 16px;
+            font-size: 14px;
             line-height: 1.5;
-            color: #e0e0e0;
+            color: #0f0;
         }
         button {
-            margin-top: 20px;
+            margin-top: 10px;
             padding: 10px 20px;
-            font-size: 16px;
-            color: #fff;
-            background-color: #007aff;
-            border: none;
-            border-radius: 8px;
+            font-size: 14px;
+            color: #0f0;
+            background-color: #000;
+            border: 1px solid #0f0;
+            border-radius: 0;
             cursor: pointer;
             transition: background-color 0.3s ease;
         }
         button:hover {
-            background-color: #005bb5;
+            background-color: #0f0;
+            color: #000;
         }
         button:disabled {
-            background-color: #555;
+            background-color: #333;
+            color: #666;
             cursor: not-allowed;
-        }
-        pre {
-            font-family: monospace;
-            font-size: 12px;
-            color: #0f0;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        #status {
-            margin-top: 10px;
-            font-size: 14px;
-            color: #0f0;
-            font-weight: bold;
         }
     </style>
 </head>
@@ -80,21 +67,20 @@
   | | \ \ (_) | |_) | |_| | ||  __/ | | | | || (_) |
   |_|  \_\___/|_.__/ \__,_|\__\___|_| |_|  \__\___/ 
     </pre>
-    <h1>robertrothe</h1>
-    <div id="transcript">
-        <p>Transkription erscheint hier...</p>
-    </div>
+    <pre id="transcript">
++---------------------------------------------+
+| Transkription erscheint hier...             |
++---------------------------------------------+
+    </pre>
     <button id="start">Aufnahme starten</button>
     <button id="stop" disabled>Aufnahme stoppen</button>
     <button id="download" disabled>Text herunterladen</button>
-    <p id="status"></p>
 
     <script>
         const startBtn = document.getElementById("start");
         const stopBtn = document.getElementById("stop");
         const downloadBtn = document.getElementById("download");
         const transcriptDiv = document.getElementById("transcript");
-        const statusDiv = document.getElementById("status");
 
         let recognition;
         let fullTranscript = ""; // Speichert die gesamte Transkription
@@ -123,15 +109,21 @@
                         fullTranscript += correctGermanSpecialCharacters(transcript) + " ";
                     }
                 }
-                transcriptDiv.innerHTML = `<p>${fullTranscript}</p>`;
+                transcriptDiv.innerHTML = `
++---------------------------------------------+
+| ${fullTranscript}                           |
++---------------------------------------------+
+                `;
                 transcriptDiv.scrollTop = transcriptDiv.scrollHeight; // Automatisch nach unten scrollen
-                statusDiv.textContent = "Transkription wird erfasst...";
             };
 
             recognition.onerror = (event) => {
                 console.error("Fehler bei der Spracherkennung:", event.error);
-                transcriptDiv.innerHTML += `<p>Fehler: ${event.error}</p>`;
-                statusDiv.textContent = `Fehler: ${event.error}`;
+                transcriptDiv.innerHTML += `
++---------------------------------------------+
+| Fehler: ${event.error}                      |
++---------------------------------------------+
+                `;
                 if (isRecording) {
                     recognition.start(); // Neu starten bei Fehlern
                 }
@@ -141,11 +133,23 @@
                 if (isRecording) {
                     // Füge einen Punkt am Ende hinzu, wenn die Aufnahme neu startet
                     fullTranscript += ". ";
-                    transcriptDiv.innerHTML = `<p>${fullTranscript}</p>`;
+                    transcriptDiv.innerHTML = `
++---------------------------------------------+
+| ${fullTranscript}                           |
++---------------------------------------------+
+                    `;
                     recognition.start(); // Neu starten, wenn die Aufnahme unerwartet stoppt
-                    statusDiv.textContent = "Aufnahme neu gestartet.";
+                    transcriptDiv.innerHTML += `
++---------------------------------------------+
+| Aufnahme neu gestartet.                     |
++---------------------------------------------+
+                    `;
                 } else {
-                    statusDiv.textContent = "Aufnahme gestoppt.";
+                    transcriptDiv.innerHTML += `
++---------------------------------------------+
+| Aufnahme gestoppt.                          |
++---------------------------------------------+
+                    `;
                 }
             };
 
@@ -155,8 +159,11 @@
                 startBtn.disabled = true;
                 stopBtn.disabled = false;
                 downloadBtn.disabled = true;
-                transcriptDiv.innerHTML = `<p>Aufnahme gestartet...</p>`;
-                statusDiv.textContent = "Aufnahme gestartet...";
+                transcriptDiv.innerHTML = `
++---------------------------------------------+
+| Aufnahme gestartet...                       |
++---------------------------------------------+
+                `;
             });
 
             stopBtn.addEventListener("click", () => {
@@ -165,7 +172,6 @@
                 startBtn.disabled = false;
                 stopBtn.disabled = true;
                 downloadBtn.disabled = false;
-                statusDiv.textContent = "Aufnahme gestoppt.";
             });
 
             downloadBtn.addEventListener("click", () => {
@@ -181,14 +187,16 @@
                 a.download = filename;
                 a.click();
                 URL.revokeObjectURL(url);
-                statusDiv.textContent = "Text heruntergeladen.";
             });
         } else {
-            transcriptDiv.innerHTML = "<p>Ihr Browser unterstützt keine Spracherkennung.</p>";
+            transcriptDiv.innerHTML = `
++---------------------------------------------+
+| Ihr Browser unterstützt keine Spracherkennung. |
++---------------------------------------------+
+            `;
             startBtn.disabled = true;
             stopBtn.disabled = true;
             downloadBtn.disabled = true;
-            statusDiv.textContent = "Spracherkennung nicht unterstützt.";
         }
     </script>
 </body>
