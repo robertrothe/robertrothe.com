@@ -56,9 +56,30 @@
             background-color: #555;
             cursor: not-allowed;
         }
+        pre {
+            font-family: monospace;
+            font-size: 12px;
+            color: #0f0;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        #status {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #0f0;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
+    <pre>
+   _____       _           _       _       _        
+  |  __ \     | |         | |     | |     | |       
+  | |__) |___ | |__  _   _| |_ ___| |__   | |_ ___  
+  |  _  // _ \| '_ \| | | | __/ _ \ '_ \  | __/ _ \ 
+  | | \ \ (_) | |_) | |_| | ||  __/ | | | | || (_) |
+  |_|  \_\___/|_.__/ \__,_|\__\___|_| |_|  \__\___/ 
+    </pre>
     <h1>robertrothe</h1>
     <div id="transcript">
         <p>Transkription erscheint hier...</p>
@@ -66,12 +87,14 @@
     <button id="start">Aufnahme starten</button>
     <button id="stop" disabled>Aufnahme stoppen</button>
     <button id="download" disabled>Text herunterladen</button>
+    <p id="status"></p>
 
     <script>
         const startBtn = document.getElementById("start");
         const stopBtn = document.getElementById("stop");
         const downloadBtn = document.getElementById("download");
         const transcriptDiv = document.getElementById("transcript");
+        const statusDiv = document.getElementById("status");
 
         let recognition;
         let fullTranscript = ""; // Speichert die gesamte Transkription
@@ -102,11 +125,13 @@
                 }
                 transcriptDiv.innerHTML = `<p>${fullTranscript}</p>`;
                 transcriptDiv.scrollTop = transcriptDiv.scrollHeight; // Automatisch nach unten scrollen
+                statusDiv.textContent = "Transkription wird erfasst...";
             };
 
             recognition.onerror = (event) => {
                 console.error("Fehler bei der Spracherkennung:", event.error);
                 transcriptDiv.innerHTML += `<p>Fehler: ${event.error}</p>`;
+                statusDiv.textContent = `Fehler: ${event.error}`;
                 if (isRecording) {
                     recognition.start(); // Neu starten bei Fehlern
                 }
@@ -118,9 +143,9 @@
                     fullTranscript += ". ";
                     transcriptDiv.innerHTML = `<p>${fullTranscript}</p>`;
                     recognition.start(); // Neu starten, wenn die Aufnahme unerwartet stoppt
-                    transcriptDiv.innerHTML += `<p>Aufnahme neu gestartet.</p>`;
+                    statusDiv.textContent = "Aufnahme neu gestartet.";
                 } else {
-                    transcriptDiv.innerHTML += `<p>Aufnahme gestoppt.</p>`;
+                    statusDiv.textContent = "Aufnahme gestoppt.";
                 }
             };
 
@@ -131,6 +156,7 @@
                 stopBtn.disabled = false;
                 downloadBtn.disabled = true;
                 transcriptDiv.innerHTML = `<p>Aufnahme gestartet...</p>`;
+                statusDiv.textContent = "Aufnahme gestartet...";
             });
 
             stopBtn.addEventListener("click", () => {
@@ -139,6 +165,7 @@
                 startBtn.disabled = false;
                 stopBtn.disabled = true;
                 downloadBtn.disabled = false;
+                statusDiv.textContent = "Aufnahme gestoppt.";
             });
 
             downloadBtn.addEventListener("click", () => {
@@ -154,12 +181,14 @@
                 a.download = filename;
                 a.click();
                 URL.revokeObjectURL(url);
+                statusDiv.textContent = "Text heruntergeladen.";
             });
         } else {
             transcriptDiv.innerHTML = "<p>Ihr Browser unterstützt keine Spracherkennung.</p>";
             startBtn.disabled = true;
             stopBtn.disabled = true;
             downloadBtn.disabled = true;
+            statusDiv.textContent = "Spracherkennung nicht unterstützt.";
         }
     </script>
 </body>
