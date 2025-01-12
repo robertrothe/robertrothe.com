@@ -68,99 +68,109 @@
     <button id="download" disabled>Text herunterladen</button>
 
     <script>
-        const startBtn = document.getElementById("start");
-        const stopBtn = document.getElementById("stop");
-        const downloadBtn = document.getElementById("download");
-        const transcriptDiv = document.getElementById("transcript");
+    const startBtn = document.getElementById("start");
+    const stopBtn = document.getElementById("stop");
+    const downloadBtn = document.getElementById("download");
+    const transcriptDiv = document.getElementById("transcript");
 
-        let recognition;
-        let fullTranscript = ""; // Speichert die gesamte Transkription
-        let isRecording = false; // Status der Aufnahme
+    let recognition;
+    let fullTranscript = ""; // Speichert die gesamte Transkription
+    let isRecording = false; // Status der Aufnahme
 
-        // Funktion zur Korrektur von deutschen Sonderzeichen
-        function correctGermanSpecialCharacters(text) {
-            return text
-                .replace(/Ã¤/g, "ä")  // ä
-                .replace(/Ã¶/g, "ö")  // ö
-                .replace(/Ã¼/g, "ü")  // ü
-                .replace(/ÃŸ/g, "ß"); // ß
+    // Funktion zur Korrektur von deutschen Sonderzeichen
+    function correctGermanSpecialCharacters(text) {
+        return text
+            .replace(/Ã¤/g, "ä")  // ä
+            .replace(/Ã¶/g, "ö")  // ö
+            .replace(/Ã¼/g, "ü")  // ü
+            .replace(/ÃŸ/g, "ß"); // ß
+    }
+
+    // Funktion, um den Inhalt des Transkriptionsbereichs zu kopieren
+    function copyTranscript() {
+        const transcriptText = transcriptDiv.textContent;
+        if (transcriptText.trim() !== "") {
+            console.log("Kopierter Inhalt:", transcriptText); // Zeigt den Inhalt im Browser-Log an
+            // Hier könntest du den Text an einen Server senden oder lokal speichern
         }
+    }
 
-        // Überprüfen, ob der Browser die Web Speech API unterstützt
-        if ("webkitSpeechRecognition" in window) {
-            recognition = new webkitSpeechRecognition();
-            recognition.continuous = true; // Unendliche Aufnahme
-            recognition.interimResults = false; // Nur finale Ergebnisse verwenden
-            recognition.lang = "de-DE"; // Sprache auf Deutsch einstellen
+    // Jede Minute den Transkript-Inhalt kopieren
+    setInterval(copyTranscript, 60000); // 60 Sekunden
 
-            recognition.onresult = (event) => {
-                for (let i = event.resultIndex; i < event.results.length; i++) {
-                    if (event.results[i].isFinal) {
-                        const transcript = event.results[i][0].transcript;
-                        fullTranscript += correctGermanSpecialCharacters(transcript) + " ";
-                    }
+    // Überprüfen, ob der Browser die Web Speech API unterstützt
+    if ("webkitSpeechRecognition" in window) {
+        recognition = new webkitSpeechRecognition();
+        recognition.continuous = true; // Unendliche Aufnahme
+        recognition.interimResults = false; // Nur finale Ergebnisse verwenden
+        recognition.lang = "de-DE"; // Sprache auf Deutsch einstellen
+
+        recognition.onresult = (event) => {
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                if (event.results[i].isFinal) {
+                    const transcript = event.results[i][0].transcript;
+                    fullTranscript += correctGermanSpecialCharacters(transcript) + " ";
                 }
+            }
+            transcriptDiv.innerHTML = `<p>${fullTranscript}</p>`;
+            transcriptDiv.scrollTop = transcriptDiv.scrollHeight; // Automatisch nach unten scrollen
+        };
+
+        recognition.onerror = (event) => {
+            console.error("Fehler bei der Spracherkennung:", event.error);
+            transcriptDiv.innerHTML += `<p>Fehler: ${event.error}</p>`;
+            if (isRecording) {
+                recognition.start(); // Neu starten bei Fehlern
+            }
+        };
+
+        recognition.onend = () => {
+            if (isRecording) {
+                fullTranscript += ". ";
                 transcriptDiv.innerHTML = `<p>${fullTranscript}</p>`;
-                transcriptDiv.scrollTop = transcriptDiv.scrollHeight; // Automatisch nach unten scrollen
-            };
+                recognition.start(); // Neu starten, wenn die Aufnahme unerwartet stoppt
+                transcriptDiv.innerHTML += `<p>Aufnahme neu gestartet.</p>`;
+            } else {
+                transcriptDiv.innerHTML += `<p>Aufnahme gestoppt.</p>`;
+            }
+        };
 
-            recognition.onerror = (event) => {
-                console.error("Fehler bei der Spracherkennung:", event.error);
-                transcriptDiv.innerHTML += `<p>Fehler: ${event.error}</p>`;
-                if (isRecording) {
-                    recognition.start(); // Neu starten bei Fehlern
-                }
-            };
-
-            recognition.onend = () => {
-                if (isRecording) {
-                    // Füge einen Punkt am Ende hinzu, wenn die Aufnahme neu startet
-                    fullTranscript += ". ";
-                    transcriptDiv.innerHTML = `<p>${fullTranscript}</p>`;
-                    recognition.start(); // Neu starten, wenn die Aufnahme unerwartet stoppt
-                    transcriptDiv.innerHTML += `<p>Aufnahme neu gestartet.</p>`;
-                } else {
-                    transcriptDiv.innerHTML += `<p>Aufnahme gestoppt.</p>`;
-                }
-            };
-
-            startBtn.addEventListener("click", () => {
-                recognition.start();
-                isRecording = true;
-                startBtn.disabled = true;
-                stopBtn.disabled = false;
-                downloadBtn.disabled = true;
-                transcriptDiv.innerHTML = `<p>Aufnahme gestartet...</p>`;
-            });
-
-            stopBtn.addEventListener("click", () => {
-                recognition.stop();
-                isRecording = false;
-                startBtn.disabled = false;
-                stopBtn.disabled = true;
-                downloadBtn.disabled = false;
-            });
-
-            downloadBtn.addEventListener("click", () => {
-                // Eindeutigen Dateinamen mit Zeitstempel erstellen
-                const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-                const filename = `transkript-${timestamp}.txt`;
-
-                // Textfile erstellen und herunterladen
-                const blob = new Blob([fullTranscript], { type: "text/plain;charset=UTF-8" });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = filename;
-                a.click();
-                URL.revokeObjectURL(url);
-            });
-        } else {
-            transcriptDiv.innerHTML = "<p>Ihr Browser unterstützt keine Spracherkennung.</p>";
+        startBtn.addEventListener("click", () => {
+            recognition.start();
+            isRecording = true;
             startBtn.disabled = true;
-            stopBtn.disabled = true;
+            stopBtn.disabled = false;
             downloadBtn.disabled = true;
-        }
-    </script>
+            transcriptDiv.innerHTML = `<p>Aufnahme gestartet...</p>`;
+        });
+
+        stopBtn.addEventListener("click", () => {
+            recognition.stop();
+            isRecording = false;
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            downloadBtn.disabled = false;
+        });
+
+        downloadBtn.addEventListener("click", () => {
+            const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+            const filename = `transkript-${timestamp}.txt`;
+
+            const blob = new Blob([fullTranscript], { type: "text/plain;charset=UTF-8" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+    } else {
+        transcriptDiv.innerHTML = "<p>Ihr Browser unterstützt keine Spracherkennung.</p>";
+        startBtn.disabled = true;
+        stopBtn.disabled = true;
+        downloadBtn.disabled = true;
+    }
+</script>
+
 </body>
 </html>
