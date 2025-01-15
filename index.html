@@ -18,19 +18,28 @@
             height: 100vh;
             overflow: hidden;
             text-align: center;
+            position: relative;
         }
-        pre {
-            margin: 0;
-            white-space: pre-wrap;
-            font-size: 12px;
-            line-height: 1;
+
+        /* Canvas für die Animation */
+        #ascii-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1; /* Hintergrundebene */
+            opacity: 0.5; /* Transparenz anpassen */
         }
+
         #content {
             background: rgba(0, 0, 0, 0.8);
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+            z-index: 1; /* Inhalt über dem Hintergrund */
         }
+
         #transcript {
             width: 400px;
             height: 200px;
@@ -43,6 +52,7 @@
             line-height: 1.5;
             margin-bottom: 20px;
         }
+
         .ascii-button {
             margin: 5px;
             padding: 10px 20px;
@@ -54,10 +64,12 @@
             cursor: pointer;
             transition: background-color 0.3s ease;
         }
+
         .ascii-button:hover {
             background-color: #0f0;
             color: #000;
         }
+
         .ascii-button:disabled {
             background-color: #333;
             color: #666;
@@ -66,6 +78,10 @@
     </style>
 </head>
 <body>
+    <!-- Canvas für die ASCII-Animation -->
+    <canvas id="ascii-canvas"></canvas>
+
+    <!-- Inhalt der Seite -->
     <div id="content">
         <pre>
   _____       _           _       _       _        
@@ -91,6 +107,60 @@
     </div>
 
     <script>
+        // Canvas und Kontext
+        const canvas = document.getElementById("ascii-canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // ASCII-Zeichen
+        const CHARS = ["@", "#", "S", "%", "?", "*", "+", ";", ":", ",", "."];
+
+        // Animationseinstellungen
+        const FRAME_RATE = 30; // Frames pro Sekunde
+        const CHAR_SIZE = 10; // Größe der ASCII-Zeichen
+        let frameNumber = 0;
+
+        // Funktion zur Generierung eines Frames
+        function generateFrame() {
+            // Hintergrund löschen
+            ctx.fillStyle = "black";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // ASCII-Art zeichnen
+            for (let y = 0; y < canvas.height; y += CHAR_SIZE) {
+                for (let x = 0; x < canvas.width; x += CHAR_SIZE) {
+                    // Dynamische Zeichenauswahl
+                    const charIndex = Math.floor((Math.sin(x / 50 + frameNumber / 10) + 1) * (CHARS.length - 1) / 2);
+                    const char = CHARS[charIndex];
+
+                    // Farbverlauf
+                    const r = Math.floor((Math.sin(x / 100 + frameNumber / 20) + 1) * 127);
+                    const g = Math.floor((Math.cos(y / 100 + frameNumber / 20) + 1) * 127);
+                    const b = Math.floor((Math.sin((x + y) / 100 + frameNumber / 20) + 1) * 127);
+                    ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+
+                    // Zeichen zeichnen
+                    ctx.fillText(char, x, y);
+                }
+            }
+
+            // Frame-Nummer erhöhen
+            frameNumber++;
+
+            // Nächsten Frame anfordern
+            requestAnimationFrame(generateFrame);
+        }
+
+        // Schriftart festlegen
+        ctx.font = `${CHAR_SIZE}px monospace`;
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+
+        // Animation starten
+        generateFrame();
+
+        // Spracherkennung (wie zuvor)
         const startBtn = document.getElementById("start");
         const stopBtn = document.getElementById("stop");
         const downloadBtn = document.getElementById("download");
