@@ -152,15 +152,24 @@
         <div id="transcript">
             <p>Transkription erscheint hier...</p>
         </div>
+        <div id="geminiResultsContainer" style="margin-top: 10px; padding: 5px; font-family: monospace; border-top: 1px solid #0f0; width: 80%; max-width: 600px;"></div>
         <button class="ascii-button" id="start">[ Start Aufnahme ]</button>
         <button class="ascii-button" id="stop" disabled>[ Stop Aufnahme ]</button>
         <button class="ascii-button" id="download" disabled>[ Text Herunterladen ]</button>
 
-        <input type="text" id="geminiApiKey" class="ascii-input" placeholder="Gemini API Key">
-        <input type="text" id="geminiModelName" class="ascii-input" placeholder="Gemini Model Name">
-        <button id="summarizeBtn" class="ascii-button">[ Summarize with Gemini ]</button>
-        <div id="geminiOutput" style="border: 1px solid #0f0; padding: 10px; margin-top: 20px; min-height: 100px; overflow-y: auto; width: 80%; max-width: 600px; font-family: monospace; margin-bottom: 10px;">Gemini output will appear here...</div>
-        <button id="downloadGeminiBtn" class="ascii-button" disabled>[ Download Summary ]</button>
+        <button id="toggleGeminiConfigBtn" class="ascii-button">[ Configure & Summarize with Gemini ]</button>
+
+        <div id="geminiConfigSection" style="display: none; margin-top: 15px; padding: 15px; border: 1px dashed #0f0; border-radius: 5px; width: 80%; max-width: 600px;">
+            <label for="newGeminiApiKey" style="color: #0f0; display: block; margin-bottom: 5px;">Gemini API Key:</label>
+            <input type="text" id="newGeminiApiKey" class="ascii-input" placeholder="Enter your Gemini API Key">
+            <a id="getApiKeyLink" href="#" style="font-size: 0.9em; color: #0f0; text-decoration: underline; margin-left: 10px;">(How to get a key?)</a>
+
+            <label for="newGeminiModelName" style="color: #0f0; display: block; margin-bottom: 5px; margin-top: 10px;">Gemini Model Name:</label>
+            <input type="text" id="newGeminiModelName" class="ascii-input" placeholder="Enter Gemini Model (e.g., gemini-pro)">
+
+            <button id="actualSummarizeBtn" class="ascii-button" style="margin-top: 15px;">[ Summarize Transcript ]</button>
+            <button id="newDownloadGeminiBtn" class="ascii-button" style="margin-top: 15px; display: none;">[ Download Summary ]</button>
+        </div>
     </section>
 
     <script>
@@ -311,41 +320,52 @@
             console.error("Ihr Browser unterstützt keine Spracherkennung.");
         }
 
-        // Gemini Integration
-        const geminiApiKeyInput = document.getElementById("geminiApiKey");
-        const geminiModelNameInput = document.getElementById("geminiModelName");
-        const summarizeBtn = document.getElementById("summarizeBtn");
-        const geminiOutputDiv = document.getElementById("geminiOutput");
-        const downloadGeminiBtn = document.getElementById("downloadGeminiBtn");
+        // Gemini Integration - New UI
+        const toggleGeminiConfigBtn = document.getElementById("toggleGeminiConfigBtn");
+        const geminiConfigSection = document.getElementById("geminiConfigSection");
+        const newGeminiApiKeyInput = document.getElementById("newGeminiApiKey");
+        const newGeminiModelNameInput = document.getElementById("newGeminiModelName");
+        // const getApiKeyLink = document.getElementById("getApiKeyLink"); // Reference if needed for JS interaction
+        const actualSummarizeBtn = document.getElementById("actualSummarizeBtn");
+        const newDownloadGeminiBtn = document.getElementById("newDownloadGeminiBtn");
+        const geminiResultsContainer = document.getElementById("geminiResultsContainer");
 
         let geminiSummary = "";
         let geminiCategories = ""; // Placeholder for now
 
-        async function handleSummarize() {
-            const apiKey = geminiApiKeyInput.value.trim();
-            const modelName = geminiModelNameInput.value.trim();
+        toggleGeminiConfigBtn.addEventListener("click", () => {
+            const isHidden = geminiConfigSection.style.display === "none";
+            geminiConfigSection.style.display = isHidden ? "block" : "none";
+            toggleGeminiConfigBtn.textContent = isHidden ? "[ Hide Configuration ]" : "[ Configure & Summarize with Gemini ]";
+        });
+
+        async function processGeminiSummarization() {
+            const apiKey = newGeminiApiKeyInput.value.trim();
+            const modelName = newGeminiModelNameInput.value.trim();
             const currentTranscript = fullTranscript.trim();
 
+            // Clear previous results and hide download button
+            geminiResultsContainer.innerHTML = "";
+            newDownloadGeminiBtn.style.display = "none";
+
             if (!apiKey) {
-                geminiOutputDiv.innerHTML = "<p style='color: red;'>Error: Gemini API Key is missing.</p>";
+                geminiResultsContainer.innerHTML = "<p style='color: red;'>Error: Gemini API Key is missing.</p>";
                 return;
             }
             if (!modelName) {
-                geminiOutputDiv.innerHTML = "<p style='color: red;'>Error: Gemini Model Name is missing.</p>";
+                geminiResultsContainer.innerHTML = "<p style='color: red;'>Error: Gemini Model Name is missing.</p>";
                 return;
             }
             if (!currentTranscript) {
-                geminiOutputDiv.innerHTML = "<p style='color: red;'>Error: Transcript is empty. Please record audio first.</p>";
+                geminiResultsContainer.innerHTML = "<p style='color: red;'>Error: Transcript is empty. Please record audio first.</p>";
                 return;
             }
 
-            geminiOutputDiv.innerHTML = "<p>Processing with Gemini...</p>";
-            downloadGeminiBtn.disabled = true;
+            geminiResultsContainer.innerHTML = "<p>Processing with Gemini...</p>";
             geminiSummary = "";
             geminiCategories = "";
 
-            // Placeholder URL - replace with actual Gemini API endpoint
-            const geminiApiUrl = `https://api.examplegemini.com/v1/models/${modelName}:generateContent?key=${apiKey}`;
+            const geminiApiUrl = `https://api.examplegemini.com/v1/models/${modelName}:generateContent?key=${apiKey}`; // Placeholder URL
 
             try {
                 const response = await fetch(geminiApiUrl, {
@@ -364,36 +384,34 @@
 
                 if (!response.ok) {
                     const errorText = await response.text();
-                    geminiOutputDiv.innerHTML = `<p style='color: red;'>Error: ${response.status} ${response.statusText}. ${errorText}</p>`;
+                    geminiResultsContainer.innerHTML = `<p style='color: red;'>Error: ${response.status} ${response.statusText}. ${errorText}</p>`;
                     return;
                 }
 
                 const data = await response.json();
 
-                // Placeholder: Adjust based on actual Gemini API response structure
                 if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0]) {
                     const resultText = data.candidates[0].content.parts[0].text;
-                    geminiSummary = resultText; // For now, store the whole result as summary
-                                                // TODO: Implement logic to separate summary and categories if API provides them distinctly
+                    geminiSummary = resultText;
                     geminiCategories = "Categories will be extracted here."; // Placeholder
 
-                    geminiOutputDiv.innerHTML = `<p><strong>Summary:</strong></p><p>${geminiSummary}</p><p><strong>Categories:</strong> ${geminiCategories}</p>`;
-                    downloadGeminiBtn.disabled = false;
+                    geminiResultsContainer.innerHTML = `<p><strong>Summary & Categories:</strong></p><pre style="white-space: pre-wrap;">${geminiSummary}</pre>`;
+                    newDownloadGeminiBtn.style.display = "block"; // Or 'inline-block' depending on desired layout
                 } else {
-                    geminiOutputDiv.innerHTML = "<p style='color: red;'>Error: Unexpected response structure from Gemini API.</p>";
+                    geminiResultsContainer.innerHTML = "<p style='color: red;'>Error: Unexpected response structure from Gemini API.</p>";
                     console.error("Unexpected Gemini API response:", data);
                 }
 
             } catch (error) {
-                geminiOutputDiv.innerHTML = `<p style='color: red;'>Network Error: ${error.message}</p>`;
+                geminiResultsContainer.innerHTML = `<p style='color: red;'>Network Error: ${error.message}</p>`;
                 console.error("Network or other error during Gemini API call:", error);
             }
         }
 
-        summarizeBtn.addEventListener("click", handleSummarize);
+        actualSummarizeBtn.addEventListener("click", processGeminiSummarization);
 
-        function handleDownloadGeminiOutput() {
-            if (!geminiSummary && !geminiCategories) { // Check if both are empty
+        function downloadGeminiResults() {
+            if (!geminiSummary && !geminiCategories) {
                 alert("No Gemini output available to download. Please generate a summary first.");
                 console.log("Download attempt failed: No Gemini content.");
                 return;
@@ -410,15 +428,15 @@
             const a = document.createElement("a");
             a.href = url;
             a.download = filename;
-            document.body.appendChild(a); // Append to body to ensure click works in all browsers
+            document.body.appendChild(a);
             a.click();
-            document.body.removeChild(a); // Clean up
+            document.body.removeChild(a);
             URL.revokeObjectURL(url);
 
             console.log("Gemini output downloaded:", filename);
         }
 
-        downloadGeminiBtn.addEventListener("click", handleDownloadGeminiOutput);
+        newDownloadGeminiBtn.addEventListener("click", downloadGeminiResults);
 
     </script>
 </body>
