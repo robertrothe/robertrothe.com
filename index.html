@@ -5,10 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Robertrothe - Lokale Speech-to-Text</title>
     <!-- 
-        WICHTIG: Wir laden die transformers.js Bibliothek.
-        Diese ermöglicht das Ausführen von KI-Modellen im Browser.
+        WICHTIG: Der alte script-Tag hier wird ENTFERNT.
+        Der Import passiert jetzt direkt im Modul-Skript am Ende der Seite.
     -->
-    <script src="https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1"></script>
     <style>
         body { font-family: monospace; margin: 0; padding: 0; background-color: #000; color: #0f0; overflow-x: hidden; }
         #main-container { padding: 40px 20px; background-color: #000; color: #0f0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
@@ -36,8 +35,11 @@
         <button class="ascii-button" id="downloadBtn" disabled>[ Transkript herunterladen ]</button>
     </main>
 
-    <script>
-        // UI-Elemente und Statusvariablen
+    <!-- HIER IST DIE ÄNDERUNG: type="module" -->
+    <script type="module">
+        // UND HIER: Die Bibliothek wird direkt per import geladen.
+        import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1';
+
         const startBtn = document.getElementById('startBtn');
         const stopBtn = document.getElementById('stopBtn');
         const downloadBtn = document.getElementById('downloadBtn');
@@ -49,12 +51,10 @@
         let isRecording = false;
         let fullTranscript = "";
         
-        // Diese Funktion initialisiert das KI-Modell
         async function initializeModel() {
+            statusDiv.textContent = 'Lade KI-Modell... (Dies kann beim ersten Mal dauern)';
             try {
-                // 'Xenova/whisper-tiny' ist ein kleines, schnelles Modell (ca. 40MB).
-                // Für höhere Qualität (aber langsamer und größer): 'Xenova/whisper-base' oder 'Xenova/whisper-small'
-                // 'multilingual: false' sorgt dafür, dass er nicht versucht, Sprachen zu übersetzen.
+                // Diese Zeile funktioniert jetzt, weil 'pipeline' korrekt importiert wurde.
                 transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny', {
                     multilingual: false,
                 });
@@ -67,7 +67,6 @@
             }
         }
 
-        // Diese Funktion wird aufgerufen, wenn die Aufnahme gestartet wird
         async function startRecording() {
             if (!transcriber) {
                 statusDiv.textContent = 'Fehler: Das Modell ist noch nicht bereit.';
@@ -76,24 +75,18 @@
             if (isRecording) return;
 
             try {
-                // Zugriff auf das Mikrofon des Benutzers anfordern
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                
-                // MediaRecorder verwenden, um Audio aufzunehmen
                 mediaRecorder = new MediaRecorder(stream);
                 
-                // Event-Handler, der aufgerufen wird, wenn ein Audioschnipsel fertig ist
                 mediaRecorder.addEventListener('dataavailable', async (event) => {
                     statusDiv.textContent = 'Verarbeite Audio...';
                     
-                    // Audiodaten in ein für das Modell lesbares Format umwandeln
                     const audioBlob = new Blob([event.data], { type: event.data.type });
                     const audioBuffer = await audioBlob.arrayBuffer();
                     const audioData = await convertAudioBufferToFloat32(audioBuffer);
 
-                    // Die eigentliche Transkription durchführen
                     const output = await transcriber(audioData, {
-                        language: 'german', // Sprache explizit angeben
+                        language: 'german',
                         task: 'transcribe',
                     });
 
@@ -109,7 +102,6 @@
                     }
                 });
 
-                // Alle 5 Sekunden einen Audioschnipsel zur Verarbeitung weitergeben
                 mediaRecorder.start(5000); 
 
                 isRecording = true;
@@ -126,11 +118,10 @@
             }
         }
 
-        // Diese Funktion wird aufgerufen, wenn die Aufnahme gestoppt wird
         function stopRecording() {
             if (mediaRecorder && mediaRecorder.state === 'recording') {
                 mediaRecorder.stop();
-                mediaRecorder.stream.getTracks().forEach(track => track.stop()); // Mikrofon freigeben
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
             }
             isRecording = false;
             startBtn.disabled = false;
@@ -139,14 +130,12 @@
             statusDiv.textContent = 'Aufnahme gestoppt. Modell ist bereit.';
         }
         
-        // Hilfsfunktion zur Konvertierung des Audioformats
         async function convertAudioBufferToFloat32(audioBuffer) {
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
             const decodedData = await audioContext.decodeAudioData(audioBuffer);
             return decodedData.getChannelData(0);
         }
 
-        // Download-Funktion
         function downloadTranscript() {
             const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
             const filename = `lokales-transkript-${timestamp}.txt`;
@@ -159,12 +148,10 @@
             URL.revokeObjectURL(url);
         }
 
-        // Event-Listener für die Buttons
         startBtn.addEventListener('click', startRecording);
         stopBtn.addEventListener('click', stopRecording);
         downloadBtn.addEventListener('click', downloadTranscript);
 
-        // Die Initialisierung des Modells starten, sobald die Seite geladen ist
         initializeModel();
 
     </script>
