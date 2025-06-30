@@ -77,9 +77,8 @@
                     
                     const audioBlob = new Blob([event.data], { type: event.data.type });
                     const audioBuffer = await audioBlob.arrayBuffer();
-                    const audioData = await convertAudioBufferToFloat32(audioBuffer);
 
-                    const output = await transcriber(audioData, {
+                    const output = await transcriber(audioBuffer, {
                         language: 'german',
                         task: 'transcribe',
                     });
@@ -124,12 +123,6 @@
             statusDiv.textContent = 'Aufnahme gestoppt. Modell ist bereit.';
         }
         
-        async function convertAudioBufferToFloat32(audioBuffer) {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const decodedData = await audioContext.decodeAudioData(audioBuffer);
-            return decodedData.getChannelData(0);
-        }
-
         function downloadTranscript() {
             const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
             const filename = `lokales-transkript-${timestamp}.txt`;
