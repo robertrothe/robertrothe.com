@@ -41,14 +41,32 @@
         const statusDiv = document.getElementById('status');
 
         let transcriber = null;
-        let mediaRecorder = null;
         let isRecording = false;
         let fullTranscript = "";
-        
+        let audioContext;
+        let stream;
+        let audioWorkletNode;
+
+        const workletCode = `
+            class AudioProcessor extends AudioWorkletProcessor {
+                constructor() {
+                    super();
+                }
+                process(inputs, outputs, parameters) {
+                    const input = inputs[0];
+                    if (input.length > 0) {
+                        const pcmData = input[0];
+                        this.port.postMessage(pcmData);
+                    }
+                    return true;
+                }
+            }
+            registerProcessor('audio-processor', AudioProcessor);
+        `;
+
         async function initializeModel() {
             if (transcriber) return;
-
-            statusDiv.textContent = 'Lade KI-Modell... (Dies kann beim ersten Mal dauern)';
+            statusDiv.textContent = 'Lade KI-Modell...';
             startBtn.disabled = true;
             try {
                 transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny');
@@ -69,33 +87,44 @@
             if (isRecording) return;
 
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(stream);
+                audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+                stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const source = audioContext.createMediaStreamSource(stream);
+
+                const blob = new Blob([workletCode], { type: 'application/javascript' });
+                const workletURL = URL.createObjectURL(blob);
+                await audioContext.audioWorklet.addModule(workletURL);
                 
-                mediaRecorder.addEventListener('dataavailable', async (event) => {
-                    statusDiv.textContent = 'Verarbeite Audio...';
-                    
-                    const audioBlob = new Blob([event.data], { type: event.data.type });
-                    const audioBuffer = await audioBlob.arrayBuffer();
+                audioWorkletNode = new AudioWorkletNode(audioContext, 'audio-processor');
+                source.connect(audioWorkletNode);
 
-                    const output = await transcriber(audioBuffer, {
-                        language: 'german',
-                        task: 'transcribe',
-                    });
+                let audioBuffer = [];
+                const bufferDurationSeconds = 5;
+                const bufferSize = audioContext.sampleRate * bufferDurationSeconds;
 
-                    const newText = output.text;
-                    if (newText && newText.trim() !== "") {
-                        fullTranscript += newText + " ";
-                        transcriptDiv.innerHTML = `<p>${fullTranscript}</p>`;
-                        transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
+                audioWorkletNode.port.onmessage = async (event) => {
+                    audioBuffer.push(...event.data);
+                    if (audioBuffer.length >= bufferSize) {
+                        const processData = new Float32Array(audioBuffer.splice(0, bufferSize));
+                        statusDiv.textContent = 'Verarbeite Audio...';
+                        
+                        const output = await transcriber(processData, {
+                            language: 'german',
+                            task: 'transcribe',
+                        });
+
+                        const newText = output.text;
+                        if (newText && newText.trim() !== "") {
+                            fullTranscript += newText + " ";
+                            transcriptDiv.innerHTML = `<p>${fullTranscript}</p>`;
+                            transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
+                        }
+                        
+                        if (isRecording) {
+                           statusDiv.textContent = 'Aufnahme läuft...';
+                        }
                     }
-                    
-                    if (isRecording) {
-                       statusDiv.textContent = 'Aufnahme läuft...';
-                    }
-                });
-
-                mediaRecorder.start(5000); 
+                };
 
                 isRecording = true;
                 startBtn.disabled = true;
@@ -112,15 +141,17 @@
         }
 
         function stopRecording() {
-            if (mediaRecorder && mediaRecorder.state === 'recording') {
-                mediaRecorder.stop();
-                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+            if (isRecording) {
+                stream.getTracks().forEach(track => track.stop());
+                if (audioContext && audioContext.state !== 'closed') {
+                    audioContext.close();
+                }
+                isRecording = false;
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+                downloadBtn.disabled = fullTranscript.trim().length === 0;
+                statusDiv.textContent = 'Aufnahme gestoppt. Modell ist bereit.';
             }
-            isRecording = false;
-            startBtn.disabled = false;
-            stopBtn.disabled = true;
-            downloadBtn.disabled = fullTranscript.trim().length === 0;
-            statusDiv.textContent = 'Aufnahme gestoppt. Modell ist bereit.';
         }
         
         function downloadTranscript() {
