@@ -1,6 +1,81 @@
-    <!-- ... (Ihr HTML- und CSS-Code bleibt unverändert) ... -->
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robertrothe - Speech & AI</title>
+    <style>
+        /* ... Ihr CSS bleibt unverändert ... */
+        body { font-family: monospace; margin: 0; padding: 0; background-color: #000; color: #0f0; overflow-x: hidden; }
+        #ascii-section { position: relative; width: 100%; height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        #ascii-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; opacity: 0.3; }
+        #ascii-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; z-index: 1; color: #0f0; }
+        #ascii-overlay pre { margin: 0; white-space: pre-wrap; font-size: 12px; line-height: 1; }
+        #audio-section { padding: 40px 20px; background-color: #000; color: #0f0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        #transcript { width: 80%; max-width: 600px; height: 200px; padding: 10px; border: 1px solid #0f0; background-color: #111; border-radius: 5px; overflow-y: auto; font-size: 16px; line-height: 1.5; margin-bottom: 20px; }
+        #transcript .interim { color: #999; }
+        .ascii-button { margin: 5px; padding: 10px 20px; font-size: 14px; color: #0f0; background-color: #000; border: 1px solid #0f0; border-radius: 5px; cursor: pointer; transition: background-color 0.3s ease, color 0.3s ease; }
+        .ascii-button:hover:not(:disabled) { background-color: #0f0; color: #000; }
+        .ascii-button:disabled { border-color: #444; color: #666; cursor: not-allowed; }
+        .ascii-input { background-color: #000; color: #0f0; border: 1px solid #0f0; padding: 10px; margin: 5px 0 10px 0; font-family: monospace; border-radius: 5px; width: calc(100% - 22px); }
+    </style>
+</head>
+<body>
+    <!-- Erster Abschnitt: ASCII-Art-Animation -->
+    <section id="ascii-section">
+        <canvas id="ascii-canvas"></canvas>
+        <div id="ascii-overlay">
+            <pre>
+  _____       _           _       _       _        
+ |  __ \     | |         | |     | |     | |       
+ | |__) |___ | |__  _   _| |_ ___| |__   | |_ ___  
+ |  _  // _ \| '_ \| | | | __/ _ \ '_ \  | __/ _ \ 
+ | | \ \ (_) | |_) | |_| | ||  __/ | | | | || (_) |
+ |_|  \_\___/|_.__/ \__,_|\__\___|_| |_|  \__\___/ 
+            </pre>
+            <pre>
+   \   ^__^
+    \  (oo)\_______
+       (__)\       )\/\
+           ||----w |
+           ||     ||
+            </pre>
+        </div>
+    </section>
+
+    <!-- Zweiter Abschnitt: Audio-to-Text-Funktion -->
+    <section id="audio-section">
+        <div id="transcript">
+            <p>Transkription erscheint hier...</p>
+        </div>
+        <div id="geminiResultsContainer" style="margin-top: 20px; padding: 10px; font-family: monospace; border-top: 1px solid #0f0; width: 80%; max-width: 600px; white-space: pre-wrap;"></div>
+        
+        <button class="ascii-button" id="startBtn">[ Aufnahme starten ]</button>
+        <button class="ascii-button" id="stopBtn" disabled>[ Aufnahme stoppen ]</button>
+        <button class="ascii-button" id="downloadBtn" disabled>[ Transkript herunterladen ]</button>
+
+        <button id="toggleGeminiConfigBtn" class="ascii-button" style="margin-top: 20px;">[ Configure & Summarize with Gemini ]</button>
+
+        <div id="geminiConfigSection" style="display: none; margin-top: 15px; padding: 15px; border: 1px dashed #0f0; border-radius: 5px; width: 80%; max-width: 600px;">
+            <label for="geminiApiKey" style="color: #0f0; display: block; margin-bottom: 5px;">Gemini API Key:</label>
+            <input type="password" id="geminiApiKey" class="ascii-input" placeholder="Enter your Gemini API Key">
+            <a id="getApiKeyLink" href="https://aistudio.google.com/app/apikey" target="_blank" style="font-size: 0.9em; color: #0f0; text-decoration: underline; margin-left: 10px;">(Wie erhalte ich einen Key?)</a>
+             <p style="font-size: 0.8em; color: #999;">Hinweis: Ihr API-Key wird nur in Ihrem Browser verwendet und nicht gespeichert.</p>
+
+            <label for="geminiModelName" style="color: #0f0; display: block; margin-bottom: 5px; margin-top: 10px;">Gemini Model Name:</label>
+            <input type="text" id="geminiModelName" class="ascii-input" value="gemini-1.5-flash-latest" placeholder="e.g., gemini-1.5-flash-latest">
+
+            <button id="summarizeBtn" class="ascii-button" style="margin-top: 15px;">[ Transkript zusammenfassen ]</button>
+            <button id="downloadGeminiBtn" class="ascii-button" style="margin-top: 15px; display: none;">[ Zusammenfassung herunterladen ]</button>
+        </div>
+    </section>
+
+    <!-- ======================================================= -->
+    <!--  DAS SCRIPT GEHÖRT HIERHIN, AN DAS ENDE DES BODY-TAGS  -->
+    <!-- ======================================================= -->
     <script>
-        // --- ASCII-Animation (unverändert) ---
+        // --- ASCII-Animation ---
+        // Dieser Code funktioniert jetzt, da das Canvas-Element bereits existiert.
         const canvas = document.getElementById("ascii-canvas");
         const ctx = canvas.getContext("2d");
         canvas.width = window.innerWidth;
@@ -39,7 +114,7 @@
 
         let recognition;
         let finalTranscript = "";
-        let isRecording = false; // Dieser Status ist der "Wunsch" des Benutzers
+        let isRecording = false; 
 
         function correctGermanSpecialCharacters(text) {
             return text
@@ -58,7 +133,7 @@
 
             recognition.onresult = (event) => {
                 let interimTranscript = "";
-                let currentFinalTranscript = ""; // Nur das finale Ergebnis dieses Durchgangs
+                let currentFinalTranscript = ""; 
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
                     if (event.results[i].isFinal) {
                         currentFinalTranscript += event.results[i][0].transcript;
@@ -66,43 +141,33 @@
                         interimTranscript += event.results[i][0].transcript;
                     }
                 }
-                
-                // Füge den finalen Teil zum Gesamt-Transkript hinzu und stelle es dar
                 finalTranscript += correctGermanSpecialCharacters(currentFinalTranscript);
                 transcriptDiv.innerHTML = `<p>${finalTranscript}<span class="interim">${correctGermanSpecialCharacters(interimTranscript)}</span></p>`;
                 transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
             };
 
-            // NEUE `onerror`-Logik: Nur noch zur Fehleranzeige
             recognition.onerror = (event) => {
                 console.error("Fehler bei der Spracherkennung:", event.error);
-                // Wichtige Fehler für den Benutzer anzeigen
                 if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-                    // Stoppen, da der Fehler nicht behoben werden kann ohne Nutzeraktion
                     isRecording = false; 
                     updateButtonStates();
                     transcriptDiv.innerHTML += `<p style="color:red;">Fehler: Mikrofonzugriff wurde verweigert. Bitte erlauben Sie den Zugriff und laden Sie die Seite neu.</p>`;
                 } else if (event.error === 'network') {
-                    // Dies ist ein erwarteter Fehler (Timeout), wird durch onend behandelt
                     console.log("Netzwerk-Timeout, `onend` wird den Neustart übernehmen.");
                 } else {
                     transcriptDiv.innerHTML += `<p style="color:orange;">Fehler: ${event.error}.</p>`;
                 }
             };
             
-            // NEUE `onend`-Logik: Der Schlüssel zur Stabilität
             recognition.onend = () => {
                 console.log("Spracherkennung beendet.");
-                // Wenn der Benutzer die Aufnahme nicht aktiv gestoppt hat,
-                // war es ein Timeout -> also neu starten.
                 if (isRecording) {
                     console.log("Aufnahme ist noch aktiv, starte Erkennung neu...");
-                    recognition.start(); // Sicherer Neustart hier
+                    recognition.start();
                 }
             };
 
             function startRecording() {
-                // Leert das Transkript bei jedem neuen Start
                 finalTranscript = ""; 
                 transcriptDiv.innerHTML = "<p>Aufnahme gestartet... bitte sprechen.</p>";
                 isRecording = true;
@@ -112,8 +177,8 @@
             }
 
             function stopRecording() {
-                isRecording = false; // Der Benutzer möchte stoppen
-                recognition.stop(); // Löst `onend` aus, aber `isRecording` ist `false`
+                isRecording = false; 
+                recognition.stop(); 
                 updateButtonStates();
                 console.log("Aufnahme vom Benutzer gestoppt.");
             }
@@ -122,7 +187,6 @@
                 startBtn.disabled = isRecording;
                 stopBtn.disabled = !isRecording;
                 downloadBtn.disabled = isRecording || finalTranscript.trim().length === 0;
-                
                 if (!isRecording && finalTranscript.trim().length > 0) {
                      transcriptDiv.innerHTML += `<p>Aufnahme gestoppt.</p>`;
                 }
@@ -149,8 +213,7 @@
             stopBtn.disabled = true;
         }
 
-        // --- Korrigierte Gemini Integration (unverändert zur letzten Version) ---
-        // ... (Der Gemini-Teil des Skripts bleibt hier wie er war) ...
+        // --- Gemini Integration ---
         const toggleGeminiConfigBtn = document.getElementById("toggleGeminiConfigBtn");
         const geminiConfigSection = document.getElementById("geminiConfigSection");
         const geminiApiKeyInput = document.getElementById("geminiApiKey");
