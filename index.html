@@ -17,7 +17,7 @@
 <body>
     <main id="main-container">
         <h1>Lokale Speech-to-Text Demo</h1>
-        <p>(Powered by Whisper Tiny (Intel Quantized) - 100% lokal in Ihrem Browser)</p>
+        <p>(Powered by Whisper Tiny - 100% lokal in Ihrem Browser)</p>
         <div id="status">Bereit. Klicke Start, um das KI-Modell zu laden.</div>
         <div id="transcript">
             <p>Transkription erscheint hier...</p>
@@ -32,6 +32,7 @@
         
         env.remoteHost = 'https://huggingface.co';
         env.remotePathTemplate = '{model}/resolve/{revision}/';
+        env.allowLocalModels = false;
 
         const startBtn = document.getElementById('startBtn');
         const stopBtn = document.getElementById('stopBtn');
@@ -47,12 +48,10 @@
         async function initializeModel() {
             if (transcriber) return;
 
-            statusDiv.textContent = 'Lade optimiertes KI-Modell... (Dies kann beim ersten Mal dauern)';
+            statusDiv.textContent = 'Lade KI-Modell... (Dies kann beim ersten Mal dauern)';
             startBtn.disabled = true;
             try {
-                transcriber = await pipeline('automatic-speech-recognition', 'Intel/whisper-tiny-onnx-int4-inc', {
-                    multilingual: false,
-                });
+                transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny');
                 statusDiv.textContent = 'Modell geladen. Bereit für die Aufnahme.';
             } catch (error) {
                 console.error("Fehler beim Laden des Modells:", error);
