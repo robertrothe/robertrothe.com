@@ -17,7 +17,7 @@
 <body>
     <main id="main-container">
         <h1>Lokale Speech-to-Text Demo</h1>
-        <p>(Powered by Whisper Tiny - 100% lokal in Ihrem Browser)</p>
+        <p>(Powered by Whisper Small - 100% lokal in Ihrem Browser)</p>
         <div id="status">Bereit. Klicke Start, um das KI-Modell zu laden.</div>
         <div id="transcript">
             <p>Transkription erscheint hier...</p>
@@ -66,10 +66,10 @@
 
         async function initializeModel() {
             if (transcriber) return;
-            statusDiv.textContent = 'Lade KI-Modell...';
+            statusDiv.textContent = 'Lade KI-Modell (small)... Dies kann einen Moment dauern.';
             startBtn.disabled = true;
             try {
-                transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny');
+                transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-small');
                 statusDiv.textContent = 'Modell geladen. Bereit für die Aufnahme.';
             } catch (error) {
                 console.error("Fehler beim Laden des Modells:", error);
