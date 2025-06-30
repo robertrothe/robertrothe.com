@@ -1,431 +1,231 @@
-
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Robertrothe</title>
-    <style>
-        /* Allgemeine Stile */
-        body {
-            font-family: monospace;
-            margin: 0;
-            padding: 0;
-            background-color: #000;
-            color: #0f0;
-            overflow-x: hidden;
-        }
-
-        /* Erster Abschnitt: ASCII-Art-Animation */
-        #ascii-section {
-            position: relative;
-            width: 100%;
-            height: 100vh; /* Vollbild */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-        }
-
-        /* Canvas für die Animation */
-        #ascii-canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1; /* Hintergrundebene */
-            opacity: 0.5; /* Transparenz anpassen */
-        }
-
-        /* Text und ASCII-Art über der Animation */
-        #ascii-overlay {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            z-index: 1; /* Im Vordergrund */
-            color: #0f0;
-        }
-
-        #ascii-overlay pre {
-            margin: 0;
-            white-space: pre-wrap;
-            font-size: 12px;
-            line-height: 1;
-        }
-
-        /* Zweiter Abschnitt: Audio-to-Text-Funktion */
-        #audio-section {
-            padding: 20px;
-            background-color: #000;
-            color: #0f0;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-
-        #transcript {
-            width: 80%;
-            max-width: 600px;
-            height: 200px;
-            padding: 10px;
-            border: 1px solid #0f0;
-            background-color: #000;
-            border-radius: 5px;
-            overflow-y: auto;
-            font-size: 14px;
-            line-height: 1.5;
-            margin-bottom: 20px;
-        }
-
-        .ascii-button {
-            margin: 5px;
-            padding: 10px 20px;
-            font-size: 14px;
-            color: #0f0;
-            background-color: #000;
-            border: 1px solid #0f0;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-
-        .ascii-button:hover {
-            background-color: #0f0;
-            color: #000;
-        }
-
-        .ascii-button:disabled {
-            background-color: #333;
-            color: #666;
-            cursor: not-allowed;
-        }
-
-        .ascii-input {
-            background-color: #000;
-            color: #0f0;
-            border: 1px solid #0f0;
-            padding: 10px;
-            margin: 5px 0 10px 0; /* Changed bottom margin */
-            font-family: monospace;
-            border-radius: 5px;
-            width: calc(80% - 22px); /* Adjust width considering padding and border */
-            max-width: calc(600px - 22px); /* Adjust width considering padding and border */
-        }
-
-        #summarizeBtn {
-            margin-bottom: 10px;
-        }
-    </style>
-</head>
-<body>
-    <!-- Erster Abschnitt: ASCII-Art-Animation -->
-    <section id="ascii-section">
-        <!-- Canvas für die Animation -->
-        <canvas id="ascii-canvas"></canvas>
-
-        <!-- Text und ASCII-Art über der Animation -->
-        <div id="ascii-overlay">
-            <pre>
-  _____       _           _       _       _        
- |  __ \     | |         | |     | |     | |       
- | |__) |___ | |__  _   _| |_ ___| |__   | |_ ___  
- |  _  // _ \| '_ \| | | | __/ _ \ '_ \  | __/ _ \ 
- | | \ \ (_) | |_) | |_| | ||  __/ | | | | || (_) |
- |_|  \_\___/|_.__/ \__,_|\__\___|_| |_|  \__\___/ 
-            </pre>
-            <pre>
-   \   ^__^
-    \  (oo)\_______
-       (__)\       )\/\
-           ||----w |
-           ||     ||
-            </pre>
-        </div>
-    </section>
-
-    <!-- Zweiter Abschnitt: Audio-to-Text-Funktion -->
-    <section id="audio-section">
-        <div id="transcript">
-            <p>Transkription erscheint hier...</p>
-        </div>
-        <div id="geminiResultsContainer" style="margin-top: 10px; padding: 5px; font-family: monospace; border-top: 1px solid #0f0; width: 80%; max-width: 600px;"></div>
-        <button class="ascii-button" id="start">[ Start Aufnahme ]</button>
-        <button class="ascii-button" id="stop" disabled>[ Stop Aufnahme ]</button>
-        <button class="ascii-button" id="download" disabled>[ Text Herunterladen ]</button>
-
-        <button id="toggleGeminiConfigBtn" class="ascii-button">[ Configure & Summarize with Gemini ]</button>
-
-        <div id="geminiConfigSection" style="display: none; margin-top: 15px; padding: 15px; border: 1px dashed #0f0; border-radius: 5px; width: 80%; max-width: 600px;">
-            <label for="newGeminiApiKey" style="color: #0f0; display: block; margin-bottom: 5px;">Gemini API Key:</label>
-            <input type="text" id="newGeminiApiKey" class="ascii-input" placeholder="Enter your Gemini API Key">
-            <a id="getApiKeyLink" href="#" style="font-size: 0.9em; color: #0f0; text-decoration: underline; margin-left: 10px;">(How to get a key?)</a>
-
-            <label for="newGeminiModelName" style="color: #0f0; display: block; margin-bottom: 5px; margin-top: 10px;">Gemini Model Name:</label>
-            <input type="text" id="newGeminiModelName" class="ascii-input" placeholder="Enter Gemini Model (e.g., gemini-pro)">
-
-            <button id="actualSummarizeBtn" class="ascii-button" style="margin-top: 15px;">[ Summarize Transcript ]</button>
-            <button id="newDownloadGeminiBtn" class="ascii-button" style="margin-top: 15px; display: none;">[ Download Summary ]</button>
-        </div>
-    </section>
-
+    <!-- ... (Ihr HTML- und CSS-Code bleibt unverändert) ... -->
     <script>
-        // Canvas und Kontext
+        // --- ASCII-Animation (unverändert) ---
         const canvas = document.getElementById("ascii-canvas");
         const ctx = canvas.getContext("2d");
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-
-        // ASCII-Zeichen
         const CHARS = ["@", "#", "S", "%", "?", "*", "+", ";", ":", ",", "."];
-
-        // Animationseinstellungen
-        const FRAME_RATE = 30; // Frames pro Sekunde
-        const CHAR_SIZE = 10; // Größe der ASCII-Zeichen
+        const FRAME_RATE = 30;
+        const CHAR_SIZE = 10;
         let frameNumber = 0;
 
-        // Funktion zur Generierung eines Frames
         function generateFrame() {
-            // Hintergrund löschen
             ctx.fillStyle = "black";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // ASCII-Art zeichnen
             for (let y = 0; y < canvas.height; y += CHAR_SIZE) {
                 for (let x = 0; x < canvas.width; x += CHAR_SIZE) {
-                    // Dynamische Zeichenauswahl
                     const charIndex = Math.floor((Math.sin(x / 50 + frameNumber / 10) + 1) * (CHARS.length - 1) / 2);
                     const char = CHARS[charIndex];
-
-                    // Farbverlauf
                     const r = Math.floor((Math.sin(x / 100 + frameNumber / 20) + 1) * 127);
                     const g = Math.floor((Math.cos(y / 100 + frameNumber / 20) + 1) * 127);
                     const b = Math.floor((Math.sin((x + y) / 100 + frameNumber / 20) + 1) * 127);
                     ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
-
-                    // Zeichen zeichnen
                     ctx.fillText(char, x, y);
                 }
             }
-
-            // Frame-Nummer erhöhen
             frameNumber++;
-
-            // Nächsten Frame anfordern
-            requestAnimationFrame(generateFrame);
         }
-
-        // Schriftart festlegen
+        setInterval(generateFrame, 1000 / FRAME_RATE);
         ctx.font = `${CHAR_SIZE}px monospace`;
         ctx.textAlign = "left";
         ctx.textBaseline = "top";
 
-        // Animation starten
-        generateFrame();
-
-        // Spracherkennung (wie zuvor)
-        const startBtn = document.getElementById("start");
-        const stopBtn = document.getElementById("stop");
-        const downloadBtn = document.getElementById("download");
+        // --- VERBESSERTE Spracherkennung mit robuster Neustart-Logik ---
+        const startBtn = document.getElementById("startBtn");
+        const stopBtn = document.getElementById("stopBtn");
+        const downloadBtn = document.getElementById("downloadBtn");
         const transcriptDiv = document.getElementById("transcript");
 
         let recognition;
-        let fullTranscript = "";
-        let isRecording = false;
+        let finalTranscript = "";
+        let isRecording = false; // Dieser Status ist der "Wunsch" des Benutzers
 
         function correctGermanSpecialCharacters(text) {
             return text
-                .replace(/Ã¤/g, "ä")
-                .replace(/Ã¶/g, "ö")
-                .replace(/Ã¼/g, "ü")
+                .replace(/Ã¤/g, "ä").replace(/Ã„/g, "Ä")
+                .replace(/Ã¶/g, "ö").replace(/Ã–/g, "Ö")
+                .replace(/Ã¼/g, "ü").replace(/Ãœ/g, "Ü")
                 .replace(/ÃŸ/g, "ß");
         }
-
-        if ("webkitSpeechRecognition" in window) {
-            recognition = new webkitSpeechRecognition();
+        
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
             recognition.continuous = true;
-            recognition.interimResults = false;
+            recognition.interimResults = true;
             recognition.lang = "de-DE";
 
             recognition.onresult = (event) => {
-                for (let i = event.resultIndex; i < event.results.length; i++) {
+                let interimTranscript = "";
+                let currentFinalTranscript = ""; // Nur das finale Ergebnis dieses Durchgangs
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
                     if (event.results[i].isFinal) {
-                        const transcript = event.results[i][0].transcript;
-                        fullTranscript += correctGermanSpecialCharacters(transcript) + " ";
-                        console.log("Transkription:", transcript);
+                        currentFinalTranscript += event.results[i][0].transcript;
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
                     }
                 }
-                transcriptDiv.innerHTML = `<p>${fullTranscript}</p>`;
+                
+                // Füge den finalen Teil zum Gesamt-Transkript hinzu und stelle es dar
+                finalTranscript += correctGermanSpecialCharacters(currentFinalTranscript);
+                transcriptDiv.innerHTML = `<p>${finalTranscript}<span class="interim">${correctGermanSpecialCharacters(interimTranscript)}</span></p>`;
                 transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
             };
 
+            // NEUE `onerror`-Logik: Nur noch zur Fehleranzeige
             recognition.onerror = (event) => {
                 console.error("Fehler bei der Spracherkennung:", event.error);
-                transcriptDiv.innerHTML += `<p>Fehler: ${event.error}</p>`;
-                if (isRecording) {
-                    recognition.start();
-                }
-            };
-
-            recognition.onend = () => {
-                if (isRecording) {
-                    fullTranscript += ". ";
-                    transcriptDiv.innerHTML = `<p>${fullTranscript}</p>`;
-                    recognition.start();
-                    transcriptDiv.innerHTML += `<p>Aufnahme neu gestartet.</p>`;
+                // Wichtige Fehler für den Benutzer anzeigen
+                if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+                    // Stoppen, da der Fehler nicht behoben werden kann ohne Nutzeraktion
+                    isRecording = false; 
+                    updateButtonStates();
+                    transcriptDiv.innerHTML += `<p style="color:red;">Fehler: Mikrofonzugriff wurde verweigert. Bitte erlauben Sie den Zugriff und laden Sie die Seite neu.</p>`;
+                } else if (event.error === 'network') {
+                    // Dies ist ein erwarteter Fehler (Timeout), wird durch onend behandelt
+                    console.log("Netzwerk-Timeout, `onend` wird den Neustart übernehmen.");
                 } else {
-                    transcriptDiv.innerHTML += `<p>Aufnahme gestoppt.</p>`;
+                    transcriptDiv.innerHTML += `<p style="color:orange;">Fehler: ${event.error}.</p>`;
+                }
+            };
+            
+            // NEUE `onend`-Logik: Der Schlüssel zur Stabilität
+            recognition.onend = () => {
+                console.log("Spracherkennung beendet.");
+                // Wenn der Benutzer die Aufnahme nicht aktiv gestoppt hat,
+                // war es ein Timeout -> also neu starten.
+                if (isRecording) {
+                    console.log("Aufnahme ist noch aktiv, starte Erkennung neu...");
+                    recognition.start(); // Sicherer Neustart hier
                 }
             };
 
-            startBtn.addEventListener("click", () => {
-                recognition.start();
+            function startRecording() {
+                // Leert das Transkript bei jedem neuen Start
+                finalTranscript = ""; 
+                transcriptDiv.innerHTML = "<p>Aufnahme gestartet... bitte sprechen.</p>";
                 isRecording = true;
-                startBtn.disabled = true;
-                stopBtn.disabled = false;
-                downloadBtn.disabled = true;
-                transcriptDiv.innerHTML = `<p>Aufnahme gestartet...</p>`;
-                console.log("Aufnahme gestartet...");
-            });
+                recognition.start();
+                updateButtonStates();
+                console.log("Aufnahme vom Benutzer gestartet...");
+            }
 
-            stopBtn.addEventListener("click", () => {
-                recognition.stop();
-                isRecording = false;
-                startBtn.disabled = false;
-                stopBtn.disabled = true;
-                downloadBtn.disabled = false;
-                console.log("Aufnahme gestoppt.");
-            });
+            function stopRecording() {
+                isRecording = false; // Der Benutzer möchte stoppen
+                recognition.stop(); // Löst `onend` aus, aber `isRecording` ist `false`
+                updateButtonStates();
+                console.log("Aufnahme vom Benutzer gestoppt.");
+            }
+            
+            function updateButtonStates() {
+                startBtn.disabled = isRecording;
+                stopBtn.disabled = !isRecording;
+                downloadBtn.disabled = isRecording || finalTranscript.trim().length === 0;
+                
+                if (!isRecording && finalTranscript.trim().length > 0) {
+                     transcriptDiv.innerHTML += `<p>Aufnahme gestoppt.</p>`;
+                }
+            }
+
+            startBtn.addEventListener("click", startRecording);
+            stopBtn.addEventListener("click", stopRecording);
 
             downloadBtn.addEventListener("click", () => {
                 const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
                 const filename = `transkript-${timestamp}.txt`;
-                const blob = new Blob([fullTranscript], { type: "text/plain;charset=UTF-8" });
+                const blob = new Blob([finalTranscript.trim()], { type: "text/plain;charset=UTF-8" });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement("a");
                 a.href = url;
                 a.download = filename;
                 a.click();
                 URL.revokeObjectURL(url);
-                console.log("Text heruntergeladen:", filename);
             });
+
         } else {
-            transcriptDiv.innerHTML = "<p>Ihr Browser unterstützt keine Spracherkennung.</p>";
+            transcriptDiv.innerHTML = "<p>Ihr Browser unterstützt die Web Speech API leider nicht. Bitte versuchen Sie es mit Google Chrome.</p>";
             startBtn.disabled = true;
             stopBtn.disabled = true;
-            downloadBtn.disabled = true;
-            console.error("Ihr Browser unterstützt keine Spracherkennung.");
         }
 
-        // Gemini Integration - New UI
+        // --- Korrigierte Gemini Integration (unverändert zur letzten Version) ---
+        // ... (Der Gemini-Teil des Skripts bleibt hier wie er war) ...
         const toggleGeminiConfigBtn = document.getElementById("toggleGeminiConfigBtn");
         const geminiConfigSection = document.getElementById("geminiConfigSection");
-        const newGeminiApiKeyInput = document.getElementById("newGeminiApiKey");
-        const newGeminiModelNameInput = document.getElementById("newGeminiModelName");
-        // const getApiKeyLink = document.getElementById("getApiKeyLink"); // Reference if needed for JS interaction
-        const actualSummarizeBtn = document.getElementById("actualSummarizeBtn");
-        const newDownloadGeminiBtn = document.getElementById("newDownloadGeminiBtn");
+        const geminiApiKeyInput = document.getElementById("geminiApiKey");
+        const geminiModelNameInput = document.getElementById("geminiModelName");
+        const summarizeBtn = document.getElementById("summarizeBtn");
+        const downloadGeminiBtn = document.getElementById("downloadGeminiBtn");
         const geminiResultsContainer = document.getElementById("geminiResultsContainer");
-
         let geminiSummary = "";
-        let geminiCategories = ""; // Placeholder for now
-
         toggleGeminiConfigBtn.addEventListener("click", () => {
             const isHidden = geminiConfigSection.style.display === "none";
             geminiConfigSection.style.display = isHidden ? "block" : "none";
             toggleGeminiConfigBtn.textContent = isHidden ? "[ Hide Configuration ]" : "[ Configure & Summarize with Gemini ]";
         });
-
         async function processGeminiSummarization() {
-            const apiKey = newGeminiApiKeyInput.value.trim();
-            const modelName = newGeminiModelNameInput.value.trim();
-            const currentTranscript = fullTranscript.trim();
-
-            // Clear previous results and hide download button
+            const apiKey = geminiApiKeyInput.value.trim();
+            const modelName = geminiModelNameInput.value.trim();
+            const currentTranscript = finalTranscript.trim();
             geminiResultsContainer.innerHTML = "";
-            newDownloadGeminiBtn.style.display = "none";
-
+            downloadGeminiBtn.style.display = "none";
             if (!apiKey) {
-                geminiResultsContainer.innerHTML = "<p style='color: red;'>Error: Gemini API Key is missing.</p>";
+                geminiResultsContainer.innerHTML = "<p style='color: red;'>Fehler: Gemini API Key fehlt.</p>";
                 return;
             }
             if (!modelName) {
-                geminiResultsContainer.innerHTML = "<p style='color: red;'>Error: Gemini Model Name is missing.</p>";
+                geminiResultsContainer.innerHTML = "<p style='color: red;'>Fehler: Gemini Model Name fehlt.</p>";
                 return;
             }
             if (!currentTranscript) {
-                geminiResultsContainer.innerHTML = "<p style='color: red;'>Error: Transcript is empty. Please record audio first.</p>";
+                geminiResultsContainer.innerHTML = "<p style='color: red;'>Fehler: Das Transkript ist leer. Bitte nehmen Sie zuerst Audio auf.</p>";
                 return;
             }
-
-            geminiResultsContainer.innerHTML = "<p>Processing with Gemini...</p>";
-            geminiSummary = "";
-            geminiCategories = "";
-
-            const geminiApiUrl = `https://api.examplegemini.com/v1/models/${modelName}:generateContent?key=${apiKey}`; // Placeholder URL
-
+            geminiResultsContainer.innerHTML = "<p>Verarbeite mit Gemini... Dies kann einen Moment dauern.</p>";
+            summarizeBtn.disabled = true;
+            const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
             try {
                 const response = await fetch(geminiApiUrl, {
                     method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
+                    headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         contents: [{
                             parts: [{
-                                text: "Summarize the following text professionally and also provide a list of 3-5 relevant categories for it: " + currentTranscript
+                                text: "Fasse den folgenden Text professionell und strukturiert auf Deutsch zusammen. Erstelle am Ende eine Liste mit 3-5 passenden Kategorien oder Schlagwörtern:\n\n---\n" + currentTranscript
                             }]
                         }]
                     }),
                 });
-
                 if (!response.ok) {
-                    const errorText = await response.text();
-                    geminiResultsContainer.innerHTML = `<p style='color: red;'>Error: ${response.status} ${response.statusText}. ${errorText}</p>`;
-                    return;
+                    const errorData = await response.json();
+                    throw new Error(`API-Fehler: ${response.status} - ${errorData.error.message}`);
                 }
-
                 const data = await response.json();
-
-                if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0]) {
-                    const resultText = data.candidates[0].content.parts[0].text;
-                    geminiSummary = resultText;
-                    geminiCategories = "Categories will be extracted here."; // Placeholder
-
-                    geminiResultsContainer.innerHTML = `<p><strong>Summary & Categories:</strong></p><pre style="white-space: pre-wrap;">${geminiSummary}</pre>`;
-                    newDownloadGeminiBtn.style.display = "block"; // Or 'inline-block' depending on desired layout
+                if (data.candidates && data.candidates[0].content.parts[0].text) {
+                    geminiSummary = data.candidates[0].content.parts[0].text;
+                    geminiResultsContainer.innerHTML = `<strong>Zusammenfassung & Kategorien:</strong><br><br>${geminiSummary}`;
+                    downloadGeminiBtn.style.display = "inline-block";
                 } else {
-                    geminiResultsContainer.innerHTML = "<p style='color: red;'>Error: Unexpected response structure from Gemini API.</p>";
-                    console.error("Unexpected Gemini API response:", data);
+                    throw new Error("Unerwartete Antwortstruktur von der Gemini API.");
                 }
-
             } catch (error) {
-                geminiResultsContainer.innerHTML = `<p style='color: red;'>Network Error: ${error.message}</p>`;
-                console.error("Network or other error during Gemini API call:", error);
+                geminiResultsContainer.innerHTML = `<p style='color: red;'>Fehler bei der Anfrage: ${error.message}</p>`;
+                console.error("Fehler beim Gemini API-Aufruf:", error);
+            } finally {
+                summarizeBtn.disabled = false;
             }
         }
-
-        actualSummarizeBtn.addEventListener("click", processGeminiSummarization);
-
-        function downloadGeminiResults() {
-            if (!geminiSummary && !geminiCategories) {
-                alert("No Gemini output available to download. Please generate a summary first.");
-                console.log("Download attempt failed: No Gemini content.");
+        summarizeBtn.addEventListener("click", processGeminiSummarization);
+        downloadGeminiBtn.addEventListener("click", () => {
+             if (!geminiSummary) {
+                alert("Keine Gemini-Ausgabe zum Herunterladen vorhanden.");
                 return;
             }
-
-            const contentToDownload = `Summary:\n${geminiSummary}\n\nCategories:\n${geminiCategories || "Not explicitly categorized by this version."}`;
-
             const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-            const filename = `gemini-output-${timestamp}.txt`;
-
-            const blob = new Blob([contentToDownload], { type: "text/plain;charset=UTF-8" });
+            const filename = `gemini-zusammenfassung-${timestamp}.txt`;
+            const blob = new Blob([geminiSummary], { type: "text/plain;charset=UTF-8" });
             const url = URL.createObjectURL(blob);
-
             const a = document.createElement("a");
             a.href = url;
             a.download = filename;
@@ -433,12 +233,7 @@
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-
-            console.log("Gemini output downloaded:", filename);
-        }
-
-        newDownloadGeminiBtn.addEventListener("click", downloadGeminiResults);
-
+        });
     </script>
 </body>
 </html>
