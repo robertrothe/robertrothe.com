@@ -3,323 +3,170 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Robertrothe - Speech & AI</title>
+    <title>Robertrothe - Lokale Speech-to-Text</title>
+    <!-- 
+        WICHTIG: Wir laden die transformers.js Bibliothek.
+        Diese ermöglicht das Ausführen von KI-Modellen im Browser.
+    -->
+    <script src="https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1"></script>
     <style>
         body { font-family: monospace; margin: 0; padding: 0; background-color: #000; color: #0f0; overflow-x: hidden; }
-        #ascii-section { position: relative; width: 100%; height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-        #ascii-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; opacity: 0.3; }
-        #ascii-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; z-index: 1; color: #0f0; }
-        #ascii-overlay pre { margin: 0; white-space: pre-wrap; font-size: 12px; line-height: 1; }
-        #audio-section { padding: 40px 20px; background-color: #000; color: #0f0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        #transcript { width: 80%; max-width: 600px; height: 200px; padding: 10px; border: 1px solid #0f0; background-color: #111; border-radius: 5px; overflow-y: auto; font-size: 16px; line-height: 1.5; margin-bottom: 20px; }
-        #transcript .interim { color: #999; }
+        #main-container { padding: 40px 20px; background-color: #000; color: #0f0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        #transcript { width: 80%; max-width: 600px; min-height: 200px; padding: 10px; border: 1px solid #0f0; background-color: #111; border-radius: 5px; overflow-y: auto; font-size: 16px; line-height: 1.5; margin-bottom: 20px; text-align: left; }
+        #status { margin: 20px; color: #ff0; font-size: 1.1em; }
         .ascii-button { margin: 5px; padding: 10px 20px; font-size: 14px; color: #0f0; background-color: #000; border: 1px solid #0f0; border-radius: 5px; cursor: pointer; transition: background-color 0.3s ease, color 0.3s ease; }
         .ascii-button:hover:not(:disabled) { background-color: #0f0; color: #000; }
         .ascii-button:disabled { border-color: #444; color: #666; cursor: not-allowed; }
-        .ascii-input { background-color: #000; color: #0f0; border: 1px solid #0f0; padding: 10px; margin: 5px 0 10px 0; font-family: monospace; border-radius: 5px; width: calc(100% - 22px); }
     </style>
 </head>
 <body>
-    <section id="ascii-section">
-        <canvas id="ascii-canvas"></canvas>
-        <div id="ascii-overlay">
-            <pre>
-  _____       _           _       _       _        
- |  __ \     | |         | |     | |     | |       
- | |__) |___ | |__  _   _| |_ ___| |__   | |_ ___  
- |  _  // _ \| '_ \| | | | __/ _ \ '_ \  | __/ _ \ 
- | | \ \ (_) | |_) | |_| | ||  __/ | | | | || (_) |
- |_|  \_\___/|_.__/ \__,_|\__\___|_| |_|  \__\___/ 
-            </pre>
-            <pre>
-   \   ^__^
-    \  (oo)\_______
-       (__)\       )\/\
-           ||----w |
-           ||     ||
-            </pre>
-        </div>
-    </section>
 
-    <section id="audio-section">
+    <main id="main-container">
+        <h1>Lokale Speech-to-Text Demo</h1>
+        <p>(Powered by OpenAI's Whisper - 100% lokal in Ihrem Browser)</p>
+        
+        <div id="status">Lade KI-Modell... Bitte haben Sie einen Moment Geduld.</div>
+
         <div id="transcript">
             <p>Transkription erscheint hier...</p>
         </div>
-        <div id="geminiResultsContainer" style="margin-top: 20px; padding: 10px; font-family: monospace; border-top: 1px solid #0f0; width: 80%; max-width: 600px; white-space: pre-wrap;"></div>
         
-        <button class="ascii-button" id="startBtn">[ Aufnahme starten ]</button>
+        <button class="ascii-button" id="startBtn" disabled>[ Aufnahme starten ]</button>
         <button class="ascii-button" id="stopBtn" disabled>[ Aufnahme stoppen ]</button>
         <button class="ascii-button" id="downloadBtn" disabled>[ Transkript herunterladen ]</button>
-
-        <button id="toggleGeminiConfigBtn" class="ascii-button" style="margin-top: 20px;">[ Configure & Summarize with Gemini ]</button>
-
-        <div id="geminiConfigSection" style="display: none; margin-top: 15px; padding: 15px; border: 1px dashed #0f0; border-radius: 5px; width: 80%; max-width: 600px;">
-            <label for="geminiApiKey" style="color: #0f0; display: block; margin-bottom: 5px;">Gemini API Key:</label>
-            <input type="password" id="geminiApiKey" class="ascii-input" placeholder="Enter your Gemini API Key">
-            <a id="getApiKeyLink" href="https://aistudio.google.com/app/apikey" target="_blank" style="font-size: 0.9em; color: #0f0; text-decoration: underline; margin-left: 10px;">(Wie erhalte ich einen Key?)</a>
-             <p style="font-size: 0.8em; color: #999;">Hinweis: Ihr API-Key wird nur in Ihrem Browser verwendet und nicht gespeichert.</p>
-
-            <label for="geminiModelName" style="color: #0f0; display: block; margin-bottom: 5px; margin-top: 10px;">Gemini Model Name:</label>
-            <input type="text" id="geminiModelName" class="ascii-input" value="gemini-1.5-flash-latest" placeholder="e.g., gemini-1.5-flash-latest">
-
-            <button id="summarizeBtn" class="ascii-button" style="margin-top: 15px;">[ Transkript zusammenfassen ]</button>
-            <button id="downloadGeminiBtn" class="ascii-button" style="margin-top: 15px; display: none;">[ Zusammenfassung herunterladen ]</button>
-        </div>
-    </section>
+    </main>
 
     <script>
-        const canvas = document.getElementById("ascii-canvas");
-        const ctx = canvas.getContext("2d");
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        const CHARS = ["@", "#", "S", "%", "?", "*", "+", ";", ":", ",", "."];
-        const FRAME_RATE = 30;
-        const CHAR_SIZE = 10;
-        let frameNumber = 0;
+        // UI-Elemente und Statusvariablen
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const transcriptDiv = document.getElementById('transcript');
+        const statusDiv = document.getElementById('status');
 
-        function generateFrame() {
-            ctx.fillStyle = "black";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            for (let y = 0; y < canvas.height; y += CHAR_SIZE) {
-                for (let x = 0; x < canvas.width; x += CHAR_SIZE) {
-                    const charIndex = Math.floor((Math.sin(x / 50 + frameNumber / 10) + 1) * (CHARS.length - 1) / 2);
-                    const char = CHARS[charIndex];
-                    const r = Math.floor((Math.sin(x / 100 + frameNumber / 20) + 1) * 127);
-                    const g = Math.floor((Math.cos(y / 100 + frameNumber / 20) + 1) * 127);
-                    const b = Math.floor((Math.sin((x + y) / 100 + frameNumber / 20) + 1) * 127);
-                    ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
-                    ctx.fillText(char, x, y);
-                }
-            }
-            frameNumber++;
-        }
-        setInterval(generateFrame, 1000 / FRAME_RATE);
-        ctx.font = `${CHAR_SIZE}px monospace`;
-        ctx.textAlign = "left";
-        ctx.textBaseline = "top";
-
-        const startBtn = document.getElementById("startBtn");
-        const stopBtn = document.getElementById("stopBtn");
-        const downloadBtn = document.getElementById("downloadBtn");
-        const transcriptDiv = document.getElementById("transcript");
-
-        let recognition;
-        let finalTranscript = "";
+        let transcriber = null;
+        let mediaRecorder = null;
         let isRecording = false;
-
-        let consecutiveErrors = 0;
-        const MAX_CONSECUTIVE_ERRORS = 5;
-        const RESTART_DELAY_MS = 1000;
-
-        function correctGermanSpecialCharacters(text) {
-            return text.replace(/Ã¤/g, "ä").replace(/Ã„/g, "Ä").replace(/Ã¶/g, "ö").replace(/Ã–/g, "Ö").replace(/Ã¼/g, "ü").replace(/Ãœ/g, "Ü").replace(/ÃŸ/g, "ß");
-        }
-
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (SpeechRecognition) {
-            recognition = new SpeechRecognition();
-            recognition.continuous = true;
-            recognition.interimResults = true;
-            recognition.lang = "de-DE";
-
-            recognition.onresult = (event) => {
-                consecutiveErrors = 0;
-                let interimTranscript = "";
-                let currentFinalTranscript = "";
-                for (let i = event.resultIndex; i < event.results.length; ++i) {
-                    if (event.results[i].isFinal) {
-                        currentFinalTranscript += event.results[i][0].transcript;
-                    } else {
-                        interimTranscript += event.results[i][0].transcript;
-                    }
-                }
-                finalTranscript += correctGermanSpecialCharacters(currentFinalTranscript);
-                transcriptDiv.innerHTML = `<p>${finalTranscript}<span class="interim">${correctGermanSpecialCharacters(interimTranscript)}</span></p>`;
-                transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
-            };
-
-            recognition.onerror = (event) => {
-                console.error("Fehler bei der Spracherkennung:", event.error);
-                if (event.error === 'network') {
-                    consecutiveErrors++;
-                    console.log(`Aufeinanderfolgende Fehler: ${consecutiveErrors}`);
-                } else if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-                    isRecording = false;
-                    updateButtonStates();
-                    transcriptDiv.innerHTML += `<p style="color:red;">Fehler: Mikrofonzugriff wurde verweigert. Bitte erlauben Sie den Zugriff.</p>`;
-                }
-            };
-
-            recognition.onend = () => {
-                console.log("Spracherkennung beendet.");
-                if (isRecording) {
-                    if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
-                        console.error("Maximale Anzahl an Fehlern erreicht. Breche die Aufnahme ab.");
-                        transcriptDiv.innerHTML += `<p style="color:red;">Verbindung zum Spracherkennungsdienst konnte nicht stabil hergestellt werden. Bitte versuchen Sie es später erneut.</p>`;
-                        stopRecording(true);
-                    } else {
-                        console.log(`Versuche Neustart in ${RESTART_DELAY_MS / 1000} Sekunde(n)...`);
-                        setTimeout(() => {
-                            if (isRecording) {
-                                try {
-                                    recognition.start();
-                                } catch (e) {
-                                    console.error("Fehler beim Neustart der Erkennung:", e);
-                                    stopRecording(true);
-                                }
-                            }
-                        }, RESTART_DELAY_MS);
-                    }
-                }
-            };
-
-            function startRecording() {
-                finalTranscript = "";
-                consecutiveErrors = 0;
-                transcriptDiv.innerHTML = "<p>Aufnahme gestartet... bitte sprechen.</p>";
-                isRecording = true;
-                try {
-                    recognition.start();
-                } catch (e) {
-                    console.error("Fehler beim ersten Start der Erkennung:", e);
-                    isRecording = false;
-                }
-                updateButtonStates();
-            }
-
-            function stopRecording(forced = false) {
-                isRecording = false;
-                try {
-                    recognition.stop();
-                } catch (e) {
-                    console.error("Fehler beim Stoppen der Erkennung:", e);
-                }
-                if (!forced) {
-                    transcriptDiv.innerHTML += `<p>Aufnahme gestoppt.</p>`;
-                }
-                updateButtonStates();
-            }
-
-            function updateButtonStates() {
-                startBtn.disabled = isRecording;
-                stopBtn.disabled = !isRecording;
-                downloadBtn.disabled = isRecording || finalTranscript.trim().length === 0;
-            }
-
-            startBtn.addEventListener("click", startRecording);
-            stopBtn.addEventListener("click", () => stopRecording(false));
-
-            downloadBtn.addEventListener("click", () => {
-                const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-                const filename = `transkript-${timestamp}.txt`;
-                const blob = new Blob([finalTranscript.trim()], {
-                    type: "text/plain;charset=UTF-8"
-                });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = filename;
-                a.click();
-                URL.revokeObjectURL(url);
-            });
-
-        } else {
-            transcriptDiv.innerHTML = "<p>Ihr Browser unterstützt die Web Speech API leider nicht. Bitte versuchen Sie es mit Google Chrome.</p>";
-            startBtn.disabled = true;
-            stopBtn.disabled = true;
-        }
-
-        const toggleGeminiConfigBtn = document.getElementById("toggleGeminiConfigBtn");
-        const geminiConfigSection = document.getElementById("geminiConfigSection");
-        const geminiApiKeyInput = document.getElementById("geminiApiKey");
-        const geminiModelNameInput = document.getElementById("geminiModelName");
-        const summarizeBtn = document.getElementById("summarizeBtn");
-        const downloadGeminiBtn = document.getElementById("downloadGeminiBtn");
-        const geminiResultsContainer = document.getElementById("geminiResultsContainer");
-        let geminiSummary = "";
-
-        toggleGeminiConfigBtn.addEventListener("click", () => {
-            const isHidden = geminiConfigSection.style.display === "none";
-            geminiConfigSection.style.display = isHidden ? "block" : "none";
-            toggleGeminiConfigBtn.textContent = isHidden ? "[ Hide Configuration ]" : "[ Configure & Summarize with Gemini ]";
-        });
-
-        async function processGeminiSummarization() {
-            const apiKey = geminiApiKeyInput.value.trim();
-            const modelName = geminiModelNameInput.value.trim();
-            const currentTranscript = finalTranscript.trim();
-            geminiResultsContainer.innerHTML = "";
-            downloadGeminiBtn.style.display = "none";
-
-            if (!apiKey) {
-                geminiResultsContainer.innerHTML = "<p style='color: red;'>Fehler: Gemini API Key fehlt.</p>";
-                return;
-            }
-            if (!modelName) {
-                geminiResultsContainer.innerHTML = "<p style='color: red;'>Fehler: Gemini Model Name fehlt.</p>";
-                return;
-            }
-            if (!currentTranscript) {
-                geminiResultsContainer.innerHTML = "<p style='color: red;'>Fehler: Das Transkript ist leer. Bitte nehmen Sie zuerst Audio auf.</p>";
-                return;
-            }
-            geminiResultsContainer.innerHTML = "<p>Verarbeite mit Gemini... Dies kann einen Moment dauern.</p>";
-            summarizeBtn.disabled = true;
-            const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+        let fullTranscript = "";
+        
+        // Diese Funktion initialisiert das KI-Modell
+        async function initializeModel() {
             try {
-                const response = await fetch(geminiApiUrl, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        contents: [{
-                            parts: [{
-                                text: "Fasse den folgenden Text professionell und strukturiert auf Deutsch zusammen. Erstelle am Ende eine Liste mit 3-5 passenden Kategorien oder Schlagwörtern:\n\n---\n" + currentTranscript
-                            }]
-                        }]
-                    }),
+                // 'Xenova/whisper-tiny' ist ein kleines, schnelles Modell (ca. 40MB).
+                // Für höhere Qualität (aber langsamer und größer): 'Xenova/whisper-base' oder 'Xenova/whisper-small'
+                // 'multilingual: false' sorgt dafür, dass er nicht versucht, Sprachen zu übersetzen.
+                transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny', {
+                    multilingual: false,
                 });
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(`API-Fehler: ${response.status} - ${errorData.error.message}`);
-                }
-                const data = await response.json();
-                if (data.candidates && data.candidates[0].content.parts[0].text) {
-                    geminiSummary = data.candidates[0].content.parts[0].text;
-                    geminiResultsContainer.innerHTML = `<strong>Zusammenfassung & Kategorien:</strong><br><br>${geminiSummary}`;
-                    downloadGeminiBtn.style.display = "inline-block";
-                } else {
-                    throw new Error("Unerwartete Antwortstruktur von der Gemini API.");
-                }
+                
+                statusDiv.textContent = 'Modell geladen. Bereit für die Aufnahme.';
+                startBtn.disabled = false;
             } catch (error) {
-                geminiResultsContainer.innerHTML = `<p style='color: red;'>Fehler bei der Anfrage: ${error.message}</p>`;
-                console.error("Fehler beim Gemini API-Aufruf:", error);
-            } finally {
-                summarizeBtn.disabled = false;
+                console.error("Fehler beim Laden des Modells:", error);
+                statusDiv.textContent = 'Fehler: Das KI-Modell konnte nicht geladen werden.';
             }
         }
-        summarizeBtn.addEventListener("click", processGeminiSummarization);
 
-        downloadGeminiBtn.addEventListener("click", () => {
-            if (!geminiSummary) {
-                alert("Keine Gemini-Ausgabe zum Herunterladen vorhanden.");
+        // Diese Funktion wird aufgerufen, wenn die Aufnahme gestartet wird
+        async function startRecording() {
+            if (!transcriber) {
+                statusDiv.textContent = 'Fehler: Das Modell ist noch nicht bereit.';
                 return;
             }
+            if (isRecording) return;
+
+            try {
+                // Zugriff auf das Mikrofon des Benutzers anfordern
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                
+                // MediaRecorder verwenden, um Audio aufzunehmen
+                mediaRecorder = new MediaRecorder(stream);
+                
+                // Event-Handler, der aufgerufen wird, wenn ein Audioschnipsel fertig ist
+                mediaRecorder.addEventListener('dataavailable', async (event) => {
+                    statusDiv.textContent = 'Verarbeite Audio...';
+                    
+                    // Audiodaten in ein für das Modell lesbares Format umwandeln
+                    const audioBlob = new Blob([event.data], { type: event.data.type });
+                    const audioBuffer = await audioBlob.arrayBuffer();
+                    const audioData = await convertAudioBufferToFloat32(audioBuffer);
+
+                    // Die eigentliche Transkription durchführen
+                    const output = await transcriber(audioData, {
+                        language: 'german', // Sprache explizit angeben
+                        task: 'transcribe',
+                    });
+
+                    const newText = output.text;
+                    if (newText && newText.trim() !== "") {
+                        fullTranscript += newText + " ";
+                        transcriptDiv.innerHTML = `<p>${fullTranscript}</p>`;
+                        transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
+                    }
+                    
+                    if (isRecording) {
+                       statusDiv.textContent = 'Aufnahme läuft...';
+                    }
+                });
+
+                // Alle 5 Sekunden einen Audioschnipsel zur Verarbeitung weitergeben
+                mediaRecorder.start(5000); 
+
+                isRecording = true;
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                downloadBtn.disabled = true;
+                transcriptDiv.innerHTML = "<p>Aufnahme gestartet...</p>";
+                fullTranscript = "";
+                statusDiv.textContent = 'Aufnahme läuft...';
+
+            } catch (error) {
+                console.error("Fehler beim Start der Aufnahme:", error);
+                statusDiv.textContent = 'Fehler: Mikrofonzugriff verweigert oder nicht möglich.';
+            }
+        }
+
+        // Diese Funktion wird aufgerufen, wenn die Aufnahme gestoppt wird
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(track => track.stop()); // Mikrofon freigeben
+            }
+            isRecording = false;
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            downloadBtn.disabled = fullTranscript.trim().length === 0;
+            statusDiv.textContent = 'Aufnahme gestoppt. Modell ist bereit.';
+        }
+        
+        // Hilfsfunktion zur Konvertierung des Audioformats
+        async function convertAudioBufferToFloat32(audioBuffer) {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const decodedData = await audioContext.decodeAudioData(audioBuffer);
+            return decodedData.getChannelData(0);
+        }
+
+        // Download-Funktion
+        function downloadTranscript() {
             const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-            const filename = `gemini-zusammenfassung-${timestamp}.txt`;
-            const blob = new Blob([geminiSummary], {
-                type: "text/plain;charset=UTF-8"
-            });
+            const filename = `lokales-transkript-${timestamp}.txt`;
+            const blob = new Blob([fullTranscript.trim()], { type: "text/plain;charset=UTF-8" });
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
             a.download = filename;
-            document.body.appendChild(a);
             a.click();
-            document.body.removeChild(a);
             URL.revokeObjectURL(url);
-        });
+        }
+
+        // Event-Listener für die Buttons
+        startBtn.addEventListener('click', startRecording);
+        stopBtn.addEventListener('click', stopRecording);
+        downloadBtn.addEventListener('click', downloadTranscript);
+
+        // Die Initialisierung des Modells starten, sobald die Seite geladen ist
+        initializeModel();
+
     </script>
 </body>
 </html>
