@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Robertrothe - Lokale Speech-to-Text (Large Model)</title>
+    <title>Robertrothe - Lokale Speech-to-Text</title>
     <style>
         body { font-family: monospace; margin: 0; padding: 0; background-color: #000; color: #0f0; overflow-x: hidden; }
         #main-container { padding: 40px 20px; background-color: #000; color: #0f0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
@@ -17,8 +17,8 @@
 <body>
     <main id="main-container">
         <h1>Lokale Speech-to-Text Demo</h1>
-        <p>(Powered by Whisper Large-v3-Turbo - 100% lokal in Ihrem Browser)</p>
-        <div id="status">Bereit. Klicke Start, um das große KI-Modell zu laden (SEHR LANGE WARTEZEIT!).</div>
+        <p>(Powered by Whisper Tiny (Intel Quantized) - 100% lokal in Ihrem Browser)</p>
+        <div id="status">Bereit. Klicke Start, um das KI-Modell zu laden.</div>
         <div id="transcript">
             <p>Transkription erscheint hier...</p>
         </div>
@@ -47,10 +47,10 @@
         async function initializeModel() {
             if (transcriber) return;
 
-            statusDiv.textContent = 'Lade großes KI-Modell... Dies kann mehrere Minuten dauern!';
+            statusDiv.textContent = 'Lade optimiertes KI-Modell... (Dies kann beim ersten Mal dauern)';
             startBtn.disabled = true;
             try {
-                transcriber = await pipeline('automatic-speech-recognition', 'onnx-community/whisper-large-v3-turbo', {
+                transcriber = await pipeline('automatic-speech-recognition', 'Intel/whisper-tiny-onnx-int4-inc', {
                     multilingual: false,
                 });
                 statusDiv.textContent = 'Modell geladen. Bereit für die Aufnahme.';
