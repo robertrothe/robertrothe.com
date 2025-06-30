@@ -3,11 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Robertrothe - Lokale Speech-to-Text</title>
-    <!-- 
-        WICHTIG: Der alte script-Tag hier wird ENTFERNT.
-        Der Import passiert jetzt direkt im Modul-Skript am Ende der Seite.
-    -->
+    <title>Robertrothe - Lokale Speech-to-Text (Large Model)</title>
     <style>
         body { font-family: monospace; margin: 0; padding: 0; background-color: #000; color: #0f0; overflow-x: hidden; }
         #main-container { padding: 40px 20px; background-color: #000; color: #0f0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
@@ -19,26 +15,23 @@
     </style>
 </head>
 <body>
-
     <main id="main-container">
         <h1>Lokale Speech-to-Text Demo</h1>
-        <p>(Powered by OpenAI's Whisper - 100% lokal in Ihrem Browser)</p>
-        
-        <div id="status">Lade KI-Modell... Bitte haben Sie einen Moment Geduld.</div>
-
+        <p>(Powered by Whisper Large-v3-Turbo - 100% lokal in Ihrem Browser)</p>
+        <div id="status">Bereit. Klicke Start, um das große KI-Modell zu laden (SEHR LANGE WARTEZEIT!).</div>
         <div id="transcript">
             <p>Transkription erscheint hier...</p>
         </div>
-        
-        <button class="ascii-button" id="startBtn" disabled>[ Aufnahme starten ]</button>
+        <button class="ascii-button" id="startBtn">[ Aufnahme starten ]</button>
         <button class="ascii-button" id="stopBtn" disabled>[ Aufnahme stoppen ]</button>
         <button class="ascii-button" id="downloadBtn" disabled>[ Transkript herunterladen ]</button>
     </main>
 
-    <!-- HIER IST DIE ÄNDERUNG: type="module" -->
     <script type="module">
-        // UND HIER: Die Bibliothek wird direkt per import geladen.
-        import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1';
+        import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1';
+        
+        env.remoteHost = 'https://huggingface.co';
+        env.remotePathTemplate = '{model}/resolve/{revision}/';
 
         const startBtn = document.getElementById('startBtn');
         const stopBtn = document.getElementById('stopBtn');
@@ -52,25 +45,27 @@
         let fullTranscript = "";
         
         async function initializeModel() {
-            statusDiv.textContent = 'Lade KI-Modell... (Dies kann beim ersten Mal dauern)';
+            if (transcriber) return;
+
+            statusDiv.textContent = 'Lade großes KI-Modell... Dies kann mehrere Minuten dauern!';
+            startBtn.disabled = true;
             try {
-                // Diese Zeile funktioniert jetzt, weil 'pipeline' korrekt importiert wurde.
-                transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny', {
+                transcriber = await pipeline('automatic-speech-recognition', 'onnx-community/whisper-large-v3-turbo', {
                     multilingual: false,
                 });
-                
                 statusDiv.textContent = 'Modell geladen. Bereit für die Aufnahme.';
-                startBtn.disabled = false;
             } catch (error) {
                 console.error("Fehler beim Laden des Modells:", error);
                 statusDiv.textContent = 'Fehler: Das KI-Modell konnte nicht geladen werden.';
+            } finally {
+                if(transcriber && !isRecording) startBtn.disabled = false;
             }
         }
 
         async function startRecording() {
             if (!transcriber) {
-                statusDiv.textContent = 'Fehler: Das Modell ist noch nicht bereit.';
-                return;
+                await initializeModel();
+                if (!transcriber) return;
             }
             if (isRecording) return;
 
@@ -151,8 +146,6 @@
         startBtn.addEventListener('click', startRecording);
         stopBtn.addEventListener('click', stopRecording);
         downloadBtn.addEventListener('click', downloadTranscript);
-
-        initializeModel();
 
     </script>
 </body>
